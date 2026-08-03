@@ -86,3 +86,7 @@ Copy `.env.example` → `.env` and adjust. Key switches:
 - `AI_PROVIDER=mock` (default, offline) · `ollama` · `openai` · `gemini`
 - `ALLOW_OAUTH=False` until you add `GITHUB_CLIENT_ID/SECRET` (and Google equivalents)
 - `CELERY_TASK_ALWAYS_EAGER=True` runs Celery tasks inline for development without a worker
+
+## License
+
+This project is licensed under the Boost Software License 1.0 (BSL-1.0) - see the [SURAG-LICENSE](SURAG-LICENSE) file for details.
