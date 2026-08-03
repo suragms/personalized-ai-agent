@@ -89,4 +89,4 @@ Copy `.env.example` → `.env` and adjust. Key switches:
 
 ## License
 
-This project is licensed under the Boost Software License 1.0 (BSL-1.0) - see the [SURAG-LICENSE](SURAG-LICENSE) file for details.
+This project is licensed under the SURAG-1.0 License - see the [SURAG-LICENSE](SURAG-LICENSE) file for details.
