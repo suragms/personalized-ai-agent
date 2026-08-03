@@ -1,0 +1,35 @@
+# Backing services for local development.
+#   docker compose -f infra/docker-compose.yml up -d
+# The Django app and Vite dev server run on the host; only Postgres + Redis run in Docker.
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    container_name: agent_db
+    environment:
+      POSTGRES_DB: agent_db
+      POSTGRES_USER: agent
+      POSTGRES_PASSWORD: agent
+    # Host port 5433: the machine's local PostgreSQL already owns 5432.
+    ports:
+      - "5433:5432"
+    volumes:
+      - agent_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agent -d agent_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: agent_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  agent_pgdata:

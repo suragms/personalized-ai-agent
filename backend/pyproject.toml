@@ -1,0 +1,14 @@
+[tool.ruff]
+line-length = 140
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = [
+    "E501",  # line length is advisory here (templates/strings)
+    "E402",  # module-level imports after settings setup
+    "B008",  # function call in default args (used by serializers)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["config", "core", "accounts", "ai", "memory", "github", "productivity", "projects", "reports", "linkedin", "resume", "portfolio", "learning", "analytics", "notifications", "seeds"]

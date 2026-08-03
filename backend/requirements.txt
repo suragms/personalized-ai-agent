@@ -1,0 +1,36 @@
+# ── Django core ───────────────────────────────────────────────────────────
+Django>=6.0,<6.2
+djangorestframework>=3.16,<3.17
+django-cors-headers>=4.7
+psycopg[binary]>=3.2
+pgvector>=0.3
+
+# ── Auth ─────────────────────────────────────────────────────────────────
+djangorestframework-simplejwt>=5.5
+PyJWT>=2.10
+
+# ── Async workers ────────────────────────────────────────────────────────
+celery>=5.5
+redis>=5.2
+
+# ── AI layer ─────────────────────────────────────────────────────────────
+langchain>=0.3
+langgraph>=0.2
+openai>=1.60
+google-generativeai>=0.8
+httpx>=0.28
+
+# ── Reports / exports ────────────────────────────────────────────────────
+markdown>=3.7
+openpyxl>=3.1
+reportlab>=4.2
+python-docx>=1.1
+
+# ── Utils ────────────────────────────────────────────────────────────────
+pydantic>=2.10
+python-dotenv>=1.0
+requests>=2.32
+
+# ── Testing ──────────────────────────────────────────────────────────────
+pytest>=8.3
+pytest-django>=4.9

@@ -1,0 +1,96 @@
+# Render Blueprint — deploy the platform with one "New Blueprint" import.
+# See docs/DEPLOY.md for the production checklist.
+services:
+  - type: postgres
+    name: agent-postgres
+    databaseName: agent_db
+    user: agent
+    plan: free
+    diskSizeGB: 1
+
+  - type: web
+    name: agent-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2
+    preDeployCommand: python manage.py migrate
+    healthCheckPath: /api/health/
+    plan: free
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.14.4
+      - key: DEBUG
+        value: "false"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: agent-postgres
+          property: host
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: agent-postgres
+          property: database
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: agent-postgres
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: agent-postgres
+          property: password
+      - key: POSTGRES_PORT
+        fromDatabase:
+          name: agent-postgres
+          property: port
+      - key: REDIS_URL
+        sync: false
+      - key: AI_PROVIDER
+        value: mock
+      - key: DJANGO_ALLOWED_HOSTS
+        value: "*,agent-backend.onrender.com"
+
+  - type: worker
+    name: agent-worker
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: celery -A config worker --beat -l info
+    plan: free
+    envVars:
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: agent-postgres
+          property: host
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: agent-postgres
+          property: database
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: agent-postgres
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: agent-postgres
+          property: password
+      - key: POSTGRES_PORT
+        fromDatabase:
+          name: agent-postgres
+          property: port
+      - key: REDIS_URL
+        sync: false
+      - key: AI_PROVIDER
+        value: mock
+
+  - type: web
+    name: agent-frontend
+    runtime: node
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    plan: free
+    envVars:
+      - key: VITE_API_BASE
+        value: https://agent-backend.onrender.com

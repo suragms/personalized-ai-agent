@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init *)",
+      "Bash(docker compose *)",
+      "Bash(python -m venv .venv)",
+      "Bash(.venv/Scripts/python.exe -m pip install --quiet --upgrade pip)",
+      "Bash(.venv/Scripts/python.exe -m pip install --quiet -r requirements.txt)",
+      "Bash(.venv/Scripts/python.exe -c \"import django; print\\('Django', django.get_version\\(\\)\\)\")",
+      "Bash(pg_isready -h localhost -p 5432)",
+      "Bash(psql -h localhost -p 5432 -U postgres -c \"SELECT version\\(\\);\")",
+      "Read(//c/Program Files/Docker/Docker/**)",
+      "Bash(sc query *)",
+      "Bash(powershell -Command \"Get-Service com.docker.service -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Status\")",
+      "Bash(export PGPASSWORD=\"postgres\")",
+      "Bash(psql -h localhost -U postgres -w -tAc \"SELECT 1\")",
+      "Bash(psql -h localhost -U postgres -w -tAc \"SELECT name FROM pg_available_extensions WHERE name='vector'\")",
+      "Bash(powershell -Command \"Start-Process 'C:\\\\Program Files\\\\Docker\\\\Docker\\\\Docker Desktop.exe'\")",
+      "Bash(docker info *)",
+      "Bash(cp .env.example .env)",
+      "Bash(.venv_bak)",
+      "Bash(.venv/Scripts/python.exe -m pip install --quiet \"markdown>=3.7\")",
+      "Bash(.venv/Scripts/python.exe manage.py makemigrations accounts core ai memory github productivity projects reports linkedin resume portfolio learning analytics notifications)",
+      "Bash(.venv/Scripts/python.exe manage.py migrate)",
+      "Bash(netstat -ano)",
+      "Bash(powershell -Command \"Get-Service -Name '*postgres*' | Select-Object Name,Status\")",
+      "Bash(.venv/Scripts/python.exe manage.py seed_demo)",
+      "Bash(.venv/Scripts/python.exe manage.py check)",
+      "Bash(.venv/Scripts/python.exe manage.py run_agents --all)",
+      "Bash(.venv/Scripts/python.exe manage.py shell -c ' *)",
+      "Bash(.venv/Scripts/python.exe manage.py run_agents github projects)",
+      "Bash(.venv/Scripts/python.exe manage.py runserver 127.0.0.1:8000 --noreload)",
+      "Bash(.venv/Scripts/python.exe -m pytest)",
+      "Bash(npm install *)",
+      "Bash(.venv/Scripts/python.exe -m pip install --quiet ruff)",
+      "Bash(.venv/Scripts/python.exe -m ruff check apps config seeds)",
+      "Bash(.venv/Scripts/python.exe -m ruff check apps config seeds --fix)"
+    ]
+  }
+}
