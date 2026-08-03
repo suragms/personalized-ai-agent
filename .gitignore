@@ -14,6 +14,7 @@ dist/
 build/
 coverage/
 *.local
+.vite/
 
 # Django
 staticfiles/
