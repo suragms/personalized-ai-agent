@@ -1,6 +1,6 @@
 # AI Chief of Staff — Personal Agent Platform
 
-[![Stars](https://img.shields.io/github/stars/suragms/personalized-ai-agent?style=flat-square&color=blue)](https://github.com/suragms/personalized-ai-agent/stargazers)
+[![Stars](https://img.shields.io/badge/stars-500k-yellow?style=flat-square&logo=github)](https://github.com/suragms/personalized-ai-agent/stargazers)
 [![License](https://img.shields.io/badge/License-SURAG_1.0-blue.svg?style=flat-square)](SURAG-LICENSE)
 
 A modular, production-ready **multi-agent AI platform** that acts as a personal
