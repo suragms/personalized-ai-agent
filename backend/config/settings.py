@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     # Third-party
     "corsheaders",
     "rest_framework",
+    "channels",
     # Platform apps
     "core",
     "accounts",
@@ -159,6 +160,18 @@ CORS_ALLOWED_ORIGINS = env_list(
 )
 CORS_ALLOW_CREDENTIALS = True
 
+# ── Channel Layer (WebSocket backing store) ───────────────────────────────
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [REDIS_URL],
+        },
+    } if not env_bool("USE_IN_MEMORY_CHANNELS", False) else {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
+
 # ── Celery / Redis ────────────────────────────────────────────────────────
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", REDIS_URL)
@@ -250,3 +263,15 @@ LOGGING = {
         "agents": {"handlers": ["console"], "level": "INFO", "propagate": False},
     },
 }
+
+# ── Sentry Error Tracking ────────────────────────────────────────────────
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+
+if not DEBUG and os.getenv("SENTRY_DSN"):
+    sentry_sdk.init(
+        dsn=os.getenv("SENTRY_DSN"),
+        integrations=[DjangoIntegration()],
+        traces_sample_rate=0.1,
+    )
+

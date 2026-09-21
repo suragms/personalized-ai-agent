@@ -1,21 +1,32 @@
 import { Bell, CheckCheck, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useMarkAllRead, useNotifications, useSweep } from "@/hooks";
+import { useWebSocket } from "@/hooks/useWebSocket";
 import { cn, relativeTime } from "@/lib/utils";
 
 const severityVariant = (s: string) => (s === "critical" ? "critical" : s === "warning" ? "warning" : "info");
 
 export default function Notifications() {
+  const queryClient = useQueryClient();
   const { data } = useNotifications();
   const markAllRead = useMarkAllRead();
   const sweep = useSweep();
+
+  useWebSocket("/ws/notifications/", (msg) => {
+    queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    queryClient.invalidateQueries({ queryKey: ["unread"] });
+    toast.info(msg.title || "New notification alert");
+  });
+
   const notifications = data?.results ?? [];
   const unreadCount = notifications.filter((n) => !n.read).length;
+
 
   return (
     <div>

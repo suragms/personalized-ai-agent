@@ -11,12 +11,42 @@ from .models import Notification, NotificationRule
 logger = logging.getLogger("agents")
 
 
+def _broadcast(notification: Notification) -> None:
+    """Push a notification to the user's WebSocket group (fire-and-forget)."""
+    try:
+        from asgiref.sync import async_to_sync
+        from channels.layers import get_channel_layer
+
+        channel_layer = get_channel_layer()
+        if channel_layer is None:
+            return
+
+        group_name = f"notifications_{notification.owner_id}"
+        payload = {
+            "id": str(notification.id),
+            "kind": notification.kind,
+            "title": notification.title,
+            "body": notification.body,
+            "severity": notification.severity,
+            "link": notification.link,
+            "read": notification.read,
+            "created_at": notification.created_at.isoformat(),
+        }
+        async_to_sync(channel_layer.group_send)(
+            group_name,
+            {"type": "notification.new", "notification": payload},
+        )
+    except Exception:
+        logger.debug("WebSocket broadcast skipped (channel layer unavailable)")
+
+
 def _create(owner, kind, title, body="", severity="info", link="", dedup_hours=24) -> bool:
     """Create a notification unless a very similar one exists recently. Returns True if created."""
     cutoff = timezone.now() - timedelta(hours=dedup_hours)
     if Notification.objects.filter(owner=owner, kind=kind, title=title, created_at__gte=cutoff).exists():
         return False
-    Notification.objects.create(owner=owner, kind=kind, title=title, body=body, severity=severity, link=link)
+    notification = Notification.objects.create(owner=owner, kind=kind, title=title, body=body, severity=severity, link=link)
+    _broadcast(notification)
     return True
 
 
