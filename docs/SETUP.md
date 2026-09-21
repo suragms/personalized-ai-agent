@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- **Python 3.14+** and **Node 24+**
+- **Python 3.12+** and **Node 20+**
 - **Docker** (for PostgreSQL + pgvector and Redis) — or a PostgreSQL 17 server
   with the `vector` extension installed manually
 - **Git**
