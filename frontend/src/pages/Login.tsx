@@ -36,7 +36,7 @@ export default function Login() {
             <BrainCircuit className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold tracking-tight">Personalized Ai Agent</h1>
+            <h1 className="text-lg font-semibold tracking-tight">Personalized AI Agent</h1>
             <p className="flex items-center justify-center gap-1 text-xs text-muted">
               <Sparkles className="h-3 w-3" /> Your personal intelligence operating system
             </p>
@@ -58,9 +58,25 @@ export default function Login() {
           </Button>
         </form>
 
-        <p className="mt-5 text-center text-xs text-muted">
-          Don't have an account? <a href="/signup" className="text-[#6366f1] hover:underline">Sign up</a>
-        </p>
+        <div className="mt-4 rounded-lg border border-border/50 bg-surface/50 p-3 text-xs text-muted">
+          <div className="flex items-center justify-between">
+            <span className="font-medium text-foreground">Credentials:</span>
+            <button
+              type="button"
+              onClick={() => {
+                setUsername("admin");
+                setPassword("GHOST CHANGE");
+              }}
+              className="text-[#6366f1] hover:underline font-medium"
+            >
+              Auto-fill
+            </button>
+          </div>
+          <div className="mt-1.5 flex justify-between text-[11px]">
+            <span>Username: <code className="rounded bg-background/80 px-1 py-0.5 text-foreground">admin</code></span>
+            <span>Password: <code className="rounded bg-background/80 px-1 py-0.5 text-foreground">GHOST CHANGE</code></span>
+          </div>
+        </div>
       </div>
     </div>
   );
