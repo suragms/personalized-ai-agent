@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .models import User
 
@@ -19,6 +20,13 @@ class UserSerializer(serializers.ModelSerializer):
             "date_joined",
         )
         read_only_fields = ("id", "role", "date_joined")
+
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        data["user"] = UserSerializer(self.user).data
+        return data
 
 
 class RegisterSerializer(serializers.Serializer):

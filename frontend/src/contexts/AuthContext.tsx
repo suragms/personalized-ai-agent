@@ -42,7 +42,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ username, password }),
     });
     setTokens(res);
-    setUser(res.user);
+    if (res.user) {
+      setUser(res.user);
+    } else {
+      const me = await api<User>("/api/auth/me/");
+      setUser(me);
+    }
   }, []);
 
   const logout = useCallback(() => {
