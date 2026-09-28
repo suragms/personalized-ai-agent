@@ -29,8 +29,11 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const NAV = [
-  { to: "/", label: "Overview", icon: LayoutDashboard },
-  { to: "/github", label: "GitHub", icon: Github },
+  { to: "/", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/insights", label: "Insights", icon: Sparkles },
+  { to: "/alerts", label: "Alerts", icon: Bell },
+  { to: "/daily-plan", label: "Daily Plan", icon: CalendarDays },
+  { to: "/integrations/github", label: "GitHub", icon: Github },
   { to: "/projects", label: "Projects", icon: FolderKanban },
   { to: "/tasks", label: "Tasks & Calendar", icon: CalendarDays },
   { to: "/reports", label: "Reports", icon: FileText },
@@ -49,8 +52,8 @@ function Sidebar() {
           <BrainCircuit className="h-4 w-4 text-white" />
         </div>
         <div className="leading-tight">
-          <p className="text-sm font-semibold tracking-tight">AI Chief of Staff</p>
-          <p className="text-[10px] text-muted">Personal Agent Platform</p>
+          <p className="text-sm font-semibold tracking-tight">Personalized AI Agent</p>
+          <p className="text-[10px] text-muted">Intelligence Platform</p>
         </div>
       </div>
 
@@ -89,7 +92,7 @@ function Sidebar() {
             cn("flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-muted hover:bg-muted/10 hover:text-foreground", isActive && "bg-primary/10 text-primary")
           }
         >
-          <Settings className="h-4 w-4" /> Settings
+          <Settings className="h-4 w-4" /> Profile & Settings
         </NavLink>
       </div>
     </aside>
@@ -146,8 +149,8 @@ function Topbar() {
             <p className="text-sm font-medium">{user?.username}</p>
             <p className="text-xs text-muted">{user?.email}</p>
           </div>
-          <DropdownMenuItem onSelect={() => navigate("/settings")}>
-            <Settings className="h-4 w-4" /> Settings
+          <DropdownMenuItem onSelect={() => navigate("/profile")}>
+            <Settings className="h-4 w-4" /> Profile & Settings
           </DropdownMenuItem>
           <DropdownMenuItem destructive onSelect={logout}>
             <LogOut className="h-4 w-4" /> Sign out
