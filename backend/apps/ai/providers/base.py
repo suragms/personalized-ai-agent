@@ -1,18 +1,17 @@
-"""Provider-agnostic LLM interface.
-
-Every backend (mock, Ollama, OpenAI, Gemini) implements this ABC. The rest of
-the platform talks only to `LLMProvider`, so swapping models never touches agent
-code.
-"""
+"""Provider-agnostic LLM interface."""
 import logging
 from abc import ABC, abstractmethod
 
 logger = logging.getLogger("ai")
 
-
 class LLMProvider(ABC):
     name = "base"
     supports_embeddings = True
+
+    def __init__(self, api_key: str = "", base_url: str = "", model: str = ""):
+        self.api_key = api_key
+        self.base_url = base_url
+        self.model = model
 
     @abstractmethod
     def complete(

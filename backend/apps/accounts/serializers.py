@@ -35,6 +35,11 @@ class RegisterSerializer(serializers.Serializer):
             raise serializers.ValidationError("Username is already taken.")
         return value
 
+    def validate_email(self, value):
+        if User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError("An account with this email already exists.")
+        return value
+
     def create(self, validated_data):
         # First account on the platform becomes the OWNER; later ones are VIEWER.
         is_first = not User.objects.exists()

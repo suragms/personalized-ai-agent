@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { analytics, ai, github, learning, linkedin, notifications, portfolio, productivity, projects, reports, resume } from "@/services";
-import type { Task } from "@/types";
+import { analytics, ai, github, learning, linkedin, notifications, portfolio, productivity, projects, providerConnections, reports, resume, skills } from "@/services";
+import type { ProviderConnectionFormData, Task } from "@/types";
 
 // ── Overview / analytics ──────────────────────────────────────────────────
 export const useOverview = () => useQuery({ queryKey: ["overview"], queryFn: analytics.overview });
@@ -98,3 +98,66 @@ export const useSweep = () => {
 // ── AI assistant ──────────────────────────────────────────────────────────
 export const useAiCommand = () => useMutation({ mutationFn: ai.command });
 export const useProviders = () => useQuery({ queryKey: ["providers"], queryFn: ai.providers });
+
+// ── Provider Connections (user-scoped) ────────────────────────────────────
+export const useProviderConnections = () =>
+  useQuery({ queryKey: ["provider-connections"], queryFn: providerConnections.list });
+
+export const useProviderDefinitions = () =>
+  useQuery({ queryKey: ["provider-definitions"], queryFn: providerConnections.definitions });
+
+export const useCreateProviderConnection = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: ProviderConnectionFormData) => providerConnections.create(data),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["provider-connections"] }),
+  });
+};
+
+export const useUpdateProviderConnection = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<ProviderConnectionFormData> }) =>
+      providerConnections.update(id, data),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["provider-connections"] }),
+  });
+};
+
+export const useDeleteProviderConnection = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => providerConnections.delete(id),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["provider-connections"] }),
+  });
+};
+
+export const useTestProviderConnection = () =>
+  useMutation({ mutationFn: (id: string) => providerConnections.test(id) });
+
+// ── Skills ────────────────────────────────────────────────────────────────
+export const useSkills = () => useQuery({ queryKey: ["skills"], queryFn: skills.list });
+
+export const useEnableSkill = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => skills.enable(id),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["skills"] }),
+  });
+};
+
+export const useDisableSkill = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => skills.disable(id),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["skills"] }),
+  });
+};
+
+export const useValidateSkill = () =>
+  useMutation({ mutationFn: (id: string) => skills.validate(id) });
+
+export const useTestSkill = () =>
+  useMutation({ mutationFn: ({ id, context }: { id: string; context?: string }) => skills.test(id, context) });
+
+export const useSkillExecutions = () =>
+  useQuery({ queryKey: ["skill-executions"], queryFn: skills.executions });

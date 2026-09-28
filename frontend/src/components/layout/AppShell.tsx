@@ -4,6 +4,7 @@ import {
   Bell,
   BrainCircuit,
   CalendarDays,
+  Code2,
   FileText,
   FolderKanban,
   Github,
@@ -74,6 +75,14 @@ function Sidebar() {
       </nav>
 
       <div className="border-t border-border p-3">
+        <NavLink
+          to="/developer"
+          className={({ isActive }) =>
+            cn("flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-muted hover:bg-muted/10 hover:text-foreground", isActive && "bg-primary/10 text-primary")
+          }
+        >
+          <Code2 className="h-4 w-4" /> Developer Options
+        </NavLink>
         <NavLink
           to="/settings"
           className={({ isActive }) =>

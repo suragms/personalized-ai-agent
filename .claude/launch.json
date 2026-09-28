@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Backend (Django)",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd backend && .venv\\Scripts\\python.exe manage.py runserver 8000"],
+      "port": 8000
+    },
+    {
+      "name": "Frontend (Vite)",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "cd frontend && npm run dev"],
+      "port": 5173
+    }
+  ]
+}

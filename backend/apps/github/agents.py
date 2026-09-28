@@ -55,7 +55,7 @@ def generate(state: dict) -> dict:
     lines += [f"- {r}" for r in recommendations]
     template = "\n".join(lines)
 
-    output = generate_prose(
+    output = generate_prose( 
         system=(
             "You are a GitHub analytics assistant. Turn the supplied metrics and "
             "recommendations into a concise weekly summary for a developer. "

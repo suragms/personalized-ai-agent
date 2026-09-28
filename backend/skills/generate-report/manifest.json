@@ -1,0 +1,10 @@
+{
+  "id": "generate-report",
+  "name": "Generate Daily Report",
+  "version": "1.0.0",
+  "description": "Generates a daily activity report.",
+  "category": "reports",
+  "author": "System",
+  "required_permissions": ["ai.generate"],
+  "tools": [{"name": "generate_report", "description": "", "input_schema": {}}]
+}

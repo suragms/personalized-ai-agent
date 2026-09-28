@@ -19,6 +19,7 @@ const Linkedin = lazy(() => import("@/pages/Linkedin"));
 const Notifications = lazy(() => import("@/pages/Notifications"));
 const Assistant = lazy(() => import("@/pages/Assistant"));
 const Settings = lazy(() => import("@/pages/Settings"));
+const DeveloperOptions = lazy(() => import("@/pages/DeveloperOptions"));
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -56,6 +57,7 @@ export default function App() {
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/assistant" element={<Assistant />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/developer" element={<DeveloperOptions />} />
             <Route path="*" element={<Overview />} />
           </Routes>
         </Suspense>

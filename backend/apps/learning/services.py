@@ -89,7 +89,7 @@ def run_agent(owner) -> AgentResult:
     lines += ["", "## Roadmap", ""]
     lines += [f"- **{i['topic']}**: {i['resource']} — {i['why']}" for i in roadmap.items]
     template = "\n".join(lines)
-    output = generate_prose(
+    output = generate_prose( 
         system="You are a learning advisor for a full-stack AI engineer. Return a concise daily learning plan using only the supplied items.",
         user=template,
         fallback=template,

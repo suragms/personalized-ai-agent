@@ -35,7 +35,7 @@ def generate(state: dict) -> dict:
         else:
             lines.append("- Not enough data to predict delivery yet.")
     template = "\n".join(lines)
-    output = generate_prose(
+    output = generate_prose( 
         system="You are a project manager summarizing HexaStack project health. Use only supplied data.",
         user=template,
         fallback=template,

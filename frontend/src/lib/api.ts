@@ -78,7 +78,19 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
     let detail = `Request failed (${res.status})`;
     try {
       const body = await res.json();
-      detail = body.detail ?? body.message ?? detail;
+      if (body.detail) detail = body.detail;
+      else if (body.message) detail = body.message;
+      else if (typeof body === "object") {
+        // Flatten Django REST Framework field validation errors
+        // e.g. {"email": ["Already exists."], "password": ["Too short"]} -> "email: Already exists. password: Too short"
+        const errors = Object.entries(body)
+          .map(([key, val]) => {
+            if (Array.isArray(val)) return `${key}: ${val.join(" ")}`;
+            return `${key}: ${val}`;
+          })
+          .join(" | ");
+        if (errors) detail = errors;
+      }
     } catch {
       /* non-JSON error body */
     }

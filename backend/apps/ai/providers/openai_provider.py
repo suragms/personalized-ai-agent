@@ -1,19 +1,30 @@
-"""OpenAI provider (default model GPT-5.5)."""
+"""OpenAI provider."""
 from django.conf import settings
-
 from .base import LLMProvider
-
 
 class OpenAIProvider(LLMProvider):
     name = "openai"
 
     def _client(self):
         from openai import OpenAI
-
-        return OpenAI(api_key=settings.OPENAI_API_KEY)
+        
+        kwargs = {}
+        # Prioritize connection args, fallback to settings Defaults 
+        key = self.api_key or getattr(settings, "OPENAI_API_KEY", "")
+        if key:
+            kwargs["api_key"] = key
+            
+        base = self.base_url or getattr(settings, "OPENAI_BASE_URL", "")
+        if base:
+            kwargs["base_url"] = base
+            
+        try:
+            return OpenAI(**kwargs)
+        except Exception:
+            return OpenAI(api_key=key) # fallback for api_key requirement exceptions
 
     def is_available(self) -> bool:
-        return bool(settings.OPENAI_API_KEY)
+        return bool(self.api_key or getattr(settings, "OPENAI_API_KEY", ""))
 
     def complete(
         self,
@@ -36,15 +47,15 @@ class OpenAIProvider(LLMProvider):
         temperature: float = 0.7,
         max_tokens: int | None = None,
     ) -> str:
-        kwargs = {"model": settings.OPENAI_MODEL, "temperature": temperature}
+        model_name = self.model or getattr(settings, "OPENAI_MODEL", "gpt-4o")
+        kwargs = {"model": model_name, "temperature": temperature}
         if max_tokens:
             kwargs["max_tokens"] = max_tokens
-        response = self._client().chat.completions.create(messages=messages, **kwargs)
+        client = self._client()
+        response = client.chat.completions.create(messages=messages, **kwargs)
         return response.choices[0].message.content or ""
 
     def embed(self, text: str) -> list[float]:
-        from openai import OpenAI
-
-        client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        client = self._client()
         response = client.embeddings.create(model="text-embedding-3-small", input=[text])
         return response.data[0].embedding

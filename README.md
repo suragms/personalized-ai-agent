@@ -1,16 +1,11 @@
-# AI Chief of Staff — Personal Agent Platform
+# Personalized Ai Agent
 
 [![Stars](https://img.shields.io/badge/stars-500k-yellow?style=flat-square&logo=github)](https://github.com/suragms/personalized-ai-agent/stargazers)
 [![License](https://img.shields.io/badge/License-SURAG_1.0-blue.svg?style=flat-square)](SURAG-LICENSE)
 
-A modular, production-ready **multi-agent AI platform** that acts as a personal
-Chief of Staff: it tracks GitHub work, monitors project delivery, auto-generates
-reports, optimizes LinkedIn/resume/portfolio, plans learning, and keeps a
-long-term AI memory — all behind a single enterprise dashboard.
+A production-ready **personal intelligence and productivity operating system** that collects authorized user data, analyzes patterns, identifies opportunities, produces actionable insights, creates daily workflows, provides alerts, and continuously suggests improvements.
 
-> **What it is not:** a chatbot. Ten autonomous agents (each a LangGraph state
-> graph) run on schedules, persist decisions to memory, and surface everything
-> through charts and natural-language commands.
+> **Core principle:** Evidence-based intelligence. Every insight is traceable to its source. Every recommendation includes reasoning. The AI suggests; you decide. No fabricated metrics, no fake reports.
 
 ## Stack
 
@@ -23,20 +18,20 @@ long-term AI memory — all behind a single enterprise dashboard.
 | Auth | JWT · GitHub OAuth · Google OAuth (optional) · role-based access |
 | DevOps | Docker Compose · GitHub Actions · Render |
 
-## The 10 agents
+## What It Does
 
-| Agent | What it does |
+| Feature | Description |
 |---|---|
-| **GitHub** | Repos, commits, PRs, issues, releases; productivity score; repo health; inactive-repo detection; weekly analytics |
-| **Daily Productivity** | Morning briefing (priorities, deadlines, workload, risk, schedule) + end-of-day wrap-up |
-| **Project Performance** | Completion %, burndown, velocity, delivery prediction, risk score (HexaStack) |
-| **Report** | Daily/weekly/monthly/quarterly/yearly reports; Markdown, HTML, PDF, Excel, Word export |
-| **LinkedIn** | Profile scoring, recruiter-visibility analysis, post ideas, hashtags, best time to post |
-| **Resume** | Auto-update from activity, ATS scoring, keyword suggestions, PDF/DOCX, versioning |
-| **Portfolio** | Auto-sync from repos; a new GitHub release refreshes the matching project |
-| **Learning** | Trend-aware daily suggestions + a personalized roadmap |
-| **Analytics** | Cross-module aggregations (coding, time, business, learning, LinkedIn, resume) |
-| **Notifications** | Rule sweep → in-app alerts for deadlines, inactive repos, low productivity, delays |
+| **Data Connections** | GitHub, websites/portfolio, LinkedIn, Instagram, Facebook, Twitter/X — authorized integrations only |
+| **Intelligence Engine** | Analyzes connected data to identify patterns, opportunities, risks, and blockers |
+| **Daily Workflow** | Morning brief, priority generation, task planning, evening review with evidence-based recommendations |
+| **Performance Insights** | Multi-dimensional analysis: development, portfolio, content, professional presence, project activity |
+| **Goals & Projects** | Connect goals → projects → tasks → daily workflow with transparent priority reasoning |
+| **Reports** | Daily/weekly/monthly reports with full source provenance and data freshness indicators |
+| **Alerts** | Critical notifications for deadlines, project risks, integration issues, and opportunities |
+| **Skills System** | Extensible skill registry for specialized analysis tasks |
+| **Decision Support** | Structured decision framework with evidence, options, pros/cons, and AI recommendations |
+| **Privacy First** | You control what's connected, analyzed, and automated. Full data visibility and removal options |
 
 ## Quick start
 
@@ -50,7 +45,7 @@ python -m venv .venv
 .venv/Scripts/activate            # Windows; `source .venv/bin/activate` on Unix
 pip install -r requirements.txt
 python manage.py migrate
-python manage.py seed_demo        # realistic 6-week dataset, demo / demo12345
+python manage.py createsuperuser  # create your admin account
 python manage.py run_agents --all # run every agent once
 python manage.py runserver 8000
 
@@ -62,18 +57,16 @@ npm run dev                       # http://localhost:5173  (proxies /api → :80
 
 Full instructions: [docs/SETUP.md](docs/SETUP.md) · Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · API: [docs/API.md](docs/API.md) · Deploy: [docs/DEPLOY.md](docs/DEPLOY.md)
 
-## Try the AI Assistant
+## Getting Started
 
-Open **AI Assistant** in the sidebar and ask, in plain English:
+After signup, you'll be guided through onboarding to:
 
-- "Generate today's report"
-- "How many commits did I make this week?"
-- "Which repository needs attention?"
-- "Predict delivery date for my projects"
-- "Generate a LinkedIn post"
-- "Update my resume"
+1. **Connect your data sources** — GitHub, portfolio website, professional profiles
+2. **Set your goals and priorities** — what you want to achieve
+3. **Configure preferences** — working hours, notification settings, automation level
+4. **Let the agent analyze** — it builds intelligence from your connected data
 
-The command router matches the intent and runs the right agent or query.
+Then use the **AI Assistant** to ask questions, generate reports, analyze performance, or get recommendations based on your real data.
 
 ## Development
 

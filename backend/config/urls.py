@@ -10,6 +10,8 @@ urlpatterns = [
     path("api/auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     # Platform modules
     path("api/ai/", include("ai.urls")),
+    path("api/skills/", include("ai.skills_urls")),
+    path("api/intelligence/", include("intelligence.urls")),
     path("api/memory/", include("memory.urls")),
     path("api/github/", include("github.urls")),
     path("api/", include("productivity.urls")),

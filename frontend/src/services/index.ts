@@ -4,6 +4,7 @@ import type {
   CalendarEvent,
   CommandResult,
   Commit,
+  ConnectionTestResult,
   ContributionPoint,
   GithubAnalytics,
   GithubInsight,
@@ -17,9 +18,14 @@ import type {
   PortfolioProject,
   PostIdea,
   Project,
+  ProviderConnection,
+  ProviderConnectionFormData,
+  ProviderDefinition,
   Report,
   Repository,
   ResumeVersion,
+  SkillExecutionLog,
+  SkillManifest,
   Task,
 } from "@/types";
 
@@ -113,5 +119,34 @@ export const notifications = {
 // ── AI command ────────────────────────────────────────────────────────────
 export const ai = {
   command: (command: string) => api<CommandResult>("/api/ai/command/", { method: "POST", body: JSON.stringify({ command }) }),
+  // Legacy providers endpoint (environment-based)
   providers: () => api<{ providers: { name: string; active: boolean; available: boolean }[] }>("/api/ai/providers/"),
+};
+
+// ── AI Provider Connections (user-scoped, encrypted credentials) ───────────
+export const providerConnections = {
+  list: () => api<{ count: number; results: ProviderConnection[] }>("/api/ai/providers/"),
+  get: (id: string) => api<ProviderConnection>(`/api/ai/providers/${id}/`),
+  create: (data: ProviderConnectionFormData) =>
+    api<ProviderConnection>("/api/ai/providers/", { method: "POST", body: JSON.stringify(data) }),
+  update: (id: string, data: Partial<ProviderConnectionFormData>) =>
+    api<ProviderConnection>(`/api/ai/providers/${id}/`, { method: "PATCH", body: JSON.stringify(data) }),
+  delete: (id: string) => api<void>(`/api/ai/providers/${id}/`, { method: "DELETE" }),
+  test: (id: string) => api<ConnectionTestResult>(`/api/ai/providers/${id}/test/`, { method: "POST" }),
+  definitions: () => api<ProviderDefinition[]>("/api/ai/providers/definitions/"),
+};
+
+// ── Skills ─────────────────────────────────────────────────────────────────
+export const skills = {
+  list: () => api<SkillManifest[]>("/api/skills/"),
+  get: (id: string) => api<SkillManifest>(`/api/skills/${id}/`),
+  enable: (id: string) => api<{ status: string }>(`/api/skills/${id}/enable/`, { method: "POST" }),
+  disable: (id: string) => api<{ status: string }>(`/api/skills/${id}/disable/`, { method: "POST" }),
+  validate: (id: string) => api<{ valid: boolean; errors: string[] }>(`/api/skills/${id}/validate/`, { method: "POST" }),
+  test: (id: string, context?: string) =>
+    api<{ status: string; data: Record<string, unknown> }>(`/api/skills/${id}/test/`, {
+      method: "POST",
+      body: JSON.stringify({ context: context ?? "" }),
+    }),
+  executions: () => api<{ count: number; results: SkillExecutionLog[] }>("/api/skills/executions/"),
 };

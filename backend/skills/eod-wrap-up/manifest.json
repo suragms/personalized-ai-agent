@@ -1,0 +1,10 @@
+{
+  "id": "eod-wrap-up",
+  "name": "EOD Wrap Up",
+  "version": "1.0.0",
+  "description": "Generates an end-of-day summary.",
+  "category": "productivity",
+  "author": "System",
+  "required_permissions": ["ai.generate"],
+  "tools": [{"name": "eod_wrap_up", "description": "", "input_schema": {}}]
+}

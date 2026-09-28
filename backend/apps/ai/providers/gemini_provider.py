@@ -10,11 +10,13 @@ class GeminiProvider(LLMProvider):
     def _model(self):
         import google.generativeai as genai
 
-        genai.configure(api_key=settings.GEMINI_API_KEY)
-        return genai.GenerativeModel(settings.GEMINI_MODEL)
+        api_key = self.api_key or getattr(settings, "GEMINI_API_KEY", "")
+        model_name = self.model or getattr(settings, "GEMINI_MODEL", "gemini-3.8-flash")
+        genai.configure(api_key=api_key)
+        return genai.GenerativeModel(model_name)
 
     def is_available(self) -> bool:
-        return bool(settings.GEMINI_API_KEY)
+        return bool(self.api_key or getattr(settings, "GEMINI_API_KEY", ""))
 
     def complete(
         self,
@@ -25,7 +27,11 @@ class GeminiProvider(LLMProvider):
         max_tokens: int | None = None,
     ) -> str:
         model = self._model()
-        response = model.generate_content(f"{system}\n\n{user}", generation_config=dict(temperature=temperature))
+        generation_config = dict(temperature=temperature)
+        if max_tokens:
+            generation_config["max_output_tokens"] = max_tokens
+        prompt = f"{system}\n\n{user}" if system else user
+        response = model.generate_content(prompt, generation_config=generation_config)
         return response.text
 
     def chat(
@@ -45,6 +51,16 @@ class GeminiProvider(LLMProvider):
     def embed(self, text: str) -> list[float]:
         import google.generativeai as genai
 
-        genai.configure(api_key=settings.GEMINI_API_KEY)
-        result = genai.embed_content(model="models/embedding-001", content=text)
-        return result["embedding"]
+        api_key = self.api_key or getattr(settings, "GEMINI_API_KEY", "")
+        genai.configure(api_key=api_key)
+        embed_model = getattr(settings, "GEMINI_EMBEDDING_MODEL", "models/gemini-embedding-001")
+        try:
+            result = genai.embed_content(model=embed_model, content=text)
+            return result["embedding"]
+        except Exception:
+            try:
+                result = genai.embed_content(model="models/embedding-001", content=text)
+                return result["embedding"]
+            except Exception:
+                # Return empty/fallback vector if API embedding fails
+                return []

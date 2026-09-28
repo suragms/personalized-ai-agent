@@ -93,7 +93,7 @@ def update_resume(owner) -> ResumeVersion:
     content = _render_markdown(data, ats)
 
     # Polished summary via LLM when available; otherwise the template.
-    polished = generate_prose(
+    polished = generate_prose( 
         system="You are a resume writer. Improve this summary to be crisp and ATS-friendly. Return only the summary paragraph.",
         user=f"Summary: {data['summary']}",
         fallback=data["summary"],

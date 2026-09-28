@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 
 export default function Login() {
   const { login } = useAuth();
-  const [username, setUsername] = useState("demo");
-  const [password, setPassword] = useState("demo12345");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -36,9 +36,9 @@ export default function Login() {
             <BrainCircuit className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold tracking-tight">AI Chief of Staff</h1>
+            <h1 className="text-lg font-semibold tracking-tight">Personalized Ai Agent</h1>
             <p className="flex items-center justify-center gap-1 text-xs text-muted">
-              <Sparkles className="h-3 w-3" /> Sign in to your personal agent platform
+              <Sparkles className="h-3 w-3" /> Your personal intelligence operating system
             </p>
           </div>
         </div>
@@ -58,8 +58,8 @@ export default function Login() {
           </Button>
         </form>
 
-        <p className="mt-5 rounded-md bg-muted/10 px-3 py-2 text-center text-xs text-muted">
-          Demo account pre-filled. Run <code className="font-mono text-[11px]">python manage.py seed_demo</code> to recreate it.
+        <p className="mt-5 text-center text-xs text-muted">
+          Don't have an account? <a href="/signup" className="text-[#6366f1] hover:underline">Sign up</a>
         </p>
       </div>
     </div>

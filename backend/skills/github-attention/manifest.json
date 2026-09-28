@@ -1,0 +1,11 @@
+{
+  "id": "github-attention",
+  "name": "GitHub Attention Repos",
+  "version": "1.0.0",
+  "description": "Reports repositories that need attention.",
+  "category": "github",
+  "author": "System",
+  "required_permissions": ["github.read"],
+  "required_integrations": ["github"],
+  "tools": [{"name": "github_attention", "description": "", "input_schema": {}}]
+}

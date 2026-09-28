@@ -14,6 +14,21 @@ def test_register_creates_owner(client, db):
     assert "access" in resp.data and "refresh" in resp.data
 
 
+def test_register_duplicate_email(client, db):
+    client.post(
+        reverse("register"),
+        {"username": "newuser", "email": "new@test.dev", "password": "supersecret123"},
+        format="json",
+    )
+    resp = client.post(
+        reverse("register"),
+        {"username": "newuser2", "email": "new@test.dev", "password": "supersecret123"},
+        format="json",
+    )
+    assert resp.status_code == 400
+    assert "An account with this email already exists." in str(resp.data)
+
+
 def test_login_returns_jwt(client, db):
     User.objects.create_user(username="demo", email="demo@test.dev", password="demo12345", role=User.OWNER)
     resp = client.post(
@@ -23,6 +38,23 @@ def test_login_returns_jwt(client, db):
     )
     assert resp.status_code == 200
     assert resp.data["access"]
+
+
+def test_login_brute_force_throttling(client, db):
+    User.objects.create_user(username="demo", email="demo@test.dev", password="demo12345", role=User.OWNER)
+    for _ in range(5):
+        client.post(
+            reverse("token_obtain_pair"),
+            {"username": "demo", "password": "wrong_password"},
+            format="json",
+        )
+    resp = client.post(
+        reverse("token_obtain_pair"),
+        {"username": "demo", "password": "wrong_password"},
+        format="json",
+    )
+    assert resp.status_code == 429
+    assert "Expected available in" in str(resp.data)
 
 
 def test_me_requires_auth(client, db):

@@ -8,6 +8,7 @@ import os
 import sys
 from datetime import timedelta
 from pathlib import Path
+from django.core.exceptions import ImproperlyConfigured
 
 from dotenv import load_dotenv
 
@@ -35,9 +36,28 @@ def env_list(name: str, default: str = "") -> list[str]:
 
 
 # ── Core Django ───────────────────────────────────────────────────────────
-SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-insecure-key-change-me")
+# Parse DEBUG first so the key guards below can reference it.
 DEBUG = env_bool("DEBUG", True)
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,0.0.0.0")
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = "dev-only-insecure-key-change-me"
+    else:
+        raise ImproperlyConfigured("SECRET_KEY environment variable is required in production.")
+
+# Dedicated encryption key for user credential storage (separate from Django signing).
+# Production MUST set ENCRYPTION_KEY. Rotating SECRET_KEY will NOT affect stored
+# provider credentials as long as ENCRYPTION_KEY remains unchanged.
+# Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+# Backwards-compatibility alias: ENCRYPTION_KEY takes precedence; FERNET_KEY is a legacy alias.
+ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY") or os.getenv("FERNET_KEY")
+if not ENCRYPTION_KEY and not DEBUG:
+    raise ImproperlyConfigured(
+        "ENCRYPTION_KEY environment variable is required in production for encrypted credentials. "
+        "Generate one with: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
+    )
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -54,6 +74,7 @@ INSTALLED_APPS = [
     "core",
     "accounts",
     "ai",
+    "intelligence",
     "memory",
     "github",
     "productivity",
@@ -98,18 +119,34 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
-# ── Database (PostgreSQL + pgvector) ──────────────────────────────────────
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("POSTGRES_DB", "agent_db"),
-        "USER": os.getenv("POSTGRES_USER", "agent"),
-        "PASSWORD": os.getenv("POSTGRES_PASSWORD", "agent"),
-        "HOST": os.getenv("POSTGRES_HOST", "localhost"),
-        "PORT": os.getenv("POSTGRES_PORT", "5433"),
-        "OPTIONS": {"connect_timeout": 10},
+# ── Database (PostgreSQL + pgvector or SQLite) ────────────────────────────
+USE_SQLITE = env_bool("USE_SQLITE", False)
+if "pytest" in sys.modules:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": ":memory:",
+        }
     }
-}
+elif USE_SQLITE:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.getenv("POSTGRES_DB", "agent_db"),
+            "USER": os.getenv("POSTGRES_USER", "agent"),
+            "PASSWORD": os.getenv("POSTGRES_PASSWORD", "agent"),
+            "HOST": os.getenv("POSTGRES_HOST", "localhost"),
+            "PORT": os.getenv("POSTGRES_PORT", "5433"),
+            "OPTIONS": {"connect_timeout": 10},
+        }
+    }
 
 # ── Auth ──────────────────────────────────────────────────────────────────
 AUTH_USER_MODEL = "accounts.User"
@@ -138,10 +175,13 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
+        "rest_framework.throttling.ScopedRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
         "anon": "100/day",
         "user": "1000/day",
+        "login": "5/min",
+        "register": "3/min",
     },
 }
 
@@ -160,6 +200,9 @@ CORS_ALLOWED_ORIGINS = env_list(
 )
 CORS_ALLOW_CREDENTIALS = True
 
+# ── Celery / Redis ────────────────────────────────────────────────────────
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+
 # ── Channel Layer (WebSocket backing store) ───────────────────────────────
 CHANNEL_LAYERS = {
     "default": {
@@ -172,8 +215,7 @@ CHANNEL_LAYERS = {
     },
 }
 
-# ── Celery / Redis ────────────────────────────────────────────────────────
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+# ── Celery ────────────────────────────────────────────────────────────────
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", REDIS_URL)
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/1")
 CELERY_TASK_ALWAYS_EAGER = env_bool("CELERY_TASK_ALWAYS_EAGER", False)
@@ -210,18 +252,35 @@ CELERY_BEAT_SCHEDULE = {
 }
 
 # ── AI layer ──────────────────────────────────────────────────────────────
-AI_PROVIDER = os.getenv("AI_PROVIDER", "mock")  # mock | ollama | openai | gemini
+AI_PROVIDER = os.getenv("AI_PROVIDER", "gemini")  # gemini | groq | grok | getunikey | opencode | openai | ollama | mock
 AI_EMBEDDING_DIM = int(os.getenv("AI_EMBEDDING_DIM", "384"))
-AI_ENHANCE_PROSE = env_bool("AI_ENHANCE_PROSE", False)  # LLM prose when a real provider is set
+AI_ENHANCE_PROSE = env_bool("AI_ENHANCE_PROSE", True)  # LLM prose when a real provider is set
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1")
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5.5")
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-pro")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+GEMINI_EMBEDDING_MODEL = os.getenv("GEMINI_EMBEDDING_MODEL", "models/gemini-embedding-001")
+
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "") or os.getenv("GROK_API_KEY", "")
+GROK_API_KEY = GROQ_API_KEY
+GROQ_BASE_URL = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
+GROK_BASE_URL = GROQ_BASE_URL
+GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+GROK_MODEL = GROQ_MODEL
+
+GETUNIKEY_API_KEY = os.getenv("GETUNIKEY_API_KEY", "")
+GETUNIKEY_BASE_URL = os.getenv("GETUNIKEY_BASE_URL", "https://www.getunikey.ai/v1")
+GETUNIKEY_MODEL = os.getenv("GETUNIKEY_MODEL", "gpt-5.5")
+
+OPENCODE_API_KEY = os.getenv("OPENCODE_API_KEY", "")
+OPENCODE_BASE_URL = os.getenv("OPENCODE_BASE_URL", "https://opencode.ai/zen/v1")
+OPENCODE_MODEL = os.getenv("OPENCODE_MODEL", "big-pickle")
 
 # ── OAuth / signup ────────────────────────────────────────────────────────
 GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID", "")

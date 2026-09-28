@@ -116,7 +116,7 @@ def generate_post(owner) -> PostIdea:
         "- Small, reviewable PRs beat the big-bang\n\n"
         "Curious what resonates — what shipped in your world this week?"
     )
-    content = generate_prose(
+    content = generate_prose( 
         system=(
             "You are a LinkedIn social strategist. Turn the developer's work log into an "
             "engaging, human post (under 200 words). Return only the post body."

@@ -116,7 +116,7 @@ def generate_report(owner, period: str = "daily", persist: bool = True) -> Agent
     start, end = period_range(period)
     markdown, data = _build_markdown(owner, period, start, end)
 
-    content = generate_prose(
+    content = generate_prose( 
         system="You are a Chief of Staff writing an executive report. Use only the supplied data, keep it concise and professional.",
         user=markdown,
         fallback=markdown,

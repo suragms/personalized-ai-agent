@@ -264,3 +264,86 @@ export interface CommandResult {
   message: string;
   data: Record<string, unknown>;
 }
+
+// ── AI Provider Management ─────────────────────────────────────────────────
+export interface ProviderDefinition {
+  id: string;
+  display_name: string;
+  category: "cloud" | "local" | "custom";
+  protocol: string;
+  requires_api_key: boolean;
+  supports_model_discovery: boolean;
+  supports_streaming: boolean;
+  supports_tools: boolean;
+  supports_embeddings: boolean;
+  default_base_url: string;
+  documentation_url: string;
+}
+
+export interface ProviderConnection {
+  id: string;
+  provider_details: ProviderDefinition;
+  display_name: string;
+  base_url: string;
+  model: string;
+  api_key_masked: string;
+  enabled: boolean;
+  is_default: boolean;
+  last_tested_at: string | null;
+  last_error_code: string;
+  latency_ms: number | null;
+  capabilities: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProviderConnectionFormData {
+  provider_id: string;
+  display_name?: string;
+  base_url?: string;
+  model?: string;
+  api_key?: string;
+  enabled?: boolean;
+  is_default?: boolean;
+}
+
+export interface ConnectionTestResult {
+  status: "ok" | "error";
+  latency_ms?: number;
+  code?: string;
+  detail?: string;
+}
+
+// ── Skills ────────────────────────────────────────────────────────────────
+export interface SkillManifest {
+  id: string;
+  name: string;
+  version: string;
+  description: string;
+  category: string;
+  required_permissions: string[];
+  required_integrations: string[];
+  required_provider_capabilities: string[];
+  tools: { name: string; description: string }[];
+  enabled: boolean;
+}
+
+export interface UserSkillConfig {
+  skill_id: string;
+  enabled: boolean;
+  configuration: Record<string, unknown>;
+}
+
+export interface SkillExecutionLog {
+  id: string;
+  skill_id: string;
+  skill_version: string;
+  started_at: string;
+  completed_at: string | null;
+  status: "running" | "success" | "error" | "rejected";
+  provider_id: string;
+  model: string;
+  error_code: string;
+  latency_ms: number | null;
+  request_id: string;
+}

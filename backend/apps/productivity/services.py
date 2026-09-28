@@ -146,7 +146,7 @@ def generate_morning(owner) -> Briefing:
     lines += [f"- {b['time']} — {b['task']}" for b in data["suggested_schedule"]]
 
     template = "\n".join(lines)
-    content = generate_prose(
+    content = generate_prose( 
         system="You are a personal Chief of Staff writing a concise morning briefing for a full-stack developer. Use only the supplied data.",
         user=template,
         fallback=template,
@@ -192,7 +192,7 @@ def generate_eod(owner) -> Briefing:
     lines += [f"- {t['title']}" for t in data["tomorrow_plan"]]
 
     template = "\n".join(lines)
-    content = generate_prose(
+    content = generate_prose( 
         system="You are a personal Chief of Staff writing an end-of-day wrap-up. Use only the supplied data.",
         user=template,
         fallback=template,

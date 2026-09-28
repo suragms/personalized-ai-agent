@@ -36,4 +36,7 @@ def seeded(owner):
     """Seed the full demo dataset for the given owner."""
     from seeds.demo import seed_demo
 
+    # Ensure github integration is configured so GitHub skills pass the integration check.
+    owner.github_username = "suragdev"
+    owner.save(update_fields=["github_username"])
     return seed_demo(owner)

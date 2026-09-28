@@ -1,0 +1,10 @@
+{
+  "id": "morning-briefing",
+  "name": "Morning Briefing",
+  "version": "1.0.0",
+  "description": "Generates a briefing for your day.",
+  "category": "productivity",
+  "author": "System",
+  "required_permissions": ["ai.generate"],
+  "tools": [{"name": "morning_briefing", "description": "", "input_schema": {}}]
+}

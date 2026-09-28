@@ -10,7 +10,7 @@ logger = logging.getLogger("ai")
 
 def remember(owner, content: str, kind: str = "note", metadata: dict | None = None) -> MemoryEntry:
     """Store a fact/decision with an embedding for later semantic recall."""
-    vector = embed_text(content)
+    vector = embed_text(text=content, owner=owner)
     return MemoryEntry.objects.create(
         owner=owner,
         content=content,
@@ -27,15 +27,18 @@ def remember_decision(owner, decision: str, context: dict | None = None) -> Memo
 
 def search_memory(owner, query: str, k: int = 8) -> list[MemoryEntry]:
     """Cosine-similarity search over the owner's memory entries."""
-    vector = embed_text(query)
+    vector = embed_text(text=query, owner=owner)
     if not vector:
         return list(MemoryEntry.objects.filter(owner=owner)[:k])
-    from pgvector.django import CosineDistance
+    try:
+        from pgvector.django import CosineDistance
 
-    return list(
-        MemoryEntry.objects.filter(owner=owner)
-        .order_by(CosineDistance("embedding", vector))[:k]
-    )
+        return list(
+            MemoryEntry.objects.filter(owner=owner)
+            .order_by(CosineDistance("embedding", vector))[:k]
+        )
+    except Exception:
+        return list(MemoryEntry.objects.filter(owner=owner)[:k])
 
 
 def log_conversation(owner, role: str, content: str, intent: str = "") -> None:
