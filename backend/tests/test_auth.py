@@ -30,10 +30,10 @@ def test_register_duplicate_email(client, db):
 
 
 def test_login_returns_jwt(client, db):
-    User.objects.create_user(username="demo", email="demo@test.dev", password="demo12345", role=User.OWNER)
+    User.objects.create_user(username="admin", email="admin@test.dev", password="GHOST CHANGE", role=User.OWNER)
     resp = client.post(
         reverse("token_obtain_pair"),
-        {"username": "demo", "password": "demo12345"},
+        {"username": "admin", "password": "GHOST CHANGE"},
         format="json",
     )
     assert resp.status_code == 200
@@ -41,16 +41,16 @@ def test_login_returns_jwt(client, db):
 
 
 def test_login_brute_force_throttling(client, db):
-    User.objects.create_user(username="demo", email="demo@test.dev", password="demo12345", role=User.OWNER)
+    User.objects.create_user(username="admin", email="admin@test.dev", password="GHOST CHANGE", role=User.OWNER)
     for _ in range(5):
         client.post(
             reverse("token_obtain_pair"),
-            {"username": "demo", "password": "wrong_password"},
+            {"username": "admin", "password": "wrong_password"},
             format="json",
         )
     resp = client.post(
         reverse("token_obtain_pair"),
-        {"username": "demo", "password": "wrong_password"},
+        {"username": "admin", "password": "wrong_password"},
         format="json",
     )
     assert resp.status_code == 429

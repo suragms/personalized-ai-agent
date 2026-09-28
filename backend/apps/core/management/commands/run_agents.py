@@ -19,7 +19,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("agents", nargs="*", type=str, help="Agent keys, e.g. github reports")
         parser.add_argument("--all", action="store_true", help="Run every registered agent")
-        parser.add_argument("--user", type=str, default="", help="Owner username (default: demo)")
+        parser.add_argument("--user", type=str, default="", help="Owner username (default: admin)")
 
     def handle(self, *args, **options):
         from accounts.models import User
@@ -30,10 +30,10 @@ class Command(BaseCommand):
             self.stderr.write("No agents requested. Use --all or pass agent keys.")
             sys.exit(1)
 
-        username = options["user"] or "demo"
+        username = options["user"] or "admin"
         owner = User.objects.filter(username=username).first()
         if owner is None:
-            self.stderr.write(f"Owner user '{username}' not found. Run `python manage.py seed_demo` first.")
+            self.stderr.write(f"Owner user '{username}' not found. ")
             sys.exit(1)
 
         unknown = [k for k in keys if k not in AGENT_REGISTRY]
