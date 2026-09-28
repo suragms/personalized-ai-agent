@@ -1,6 +1,6 @@
 """Intelligence Engine models — insights, recommendations, alerts, goals, decisions, reports."""
 from django.db import models
-from django.contrib.postgres.fields import ArrayField
+from core.fields import SafeArrayField
 
 from core.models import OwnedModel, TimeStampedModel, UUIDModel
 
@@ -373,18 +373,18 @@ class DailyPlan(OwnedModel):
 
     # Morning brief
     priorities = models.JSONField(default=list, blank=True)
-    important_alerts = ArrayField(models.UUIDField(), blank=True, default=list)
+    important_alerts = SafeArrayField(models.UUIDField(), blank=True, default=list)
     upcoming_deadlines = models.JSONField(default=list, blank=True)
     recommended_focus = models.TextField(blank=True)
     potential_blockers = models.JSONField(default=list, blank=True)
 
     # Tasks
-    tasks = ArrayField(models.UUIDField(), blank=True, default=list)
+    tasks = SafeArrayField(models.UUIDField(), blank=True, default=list)
     time_blocks = models.JSONField(default=list, blank=True)
 
     # Evening review
-    completed_tasks = ArrayField(models.UUIDField(), blank=True, default=list)
-    incomplete_tasks = ArrayField(models.UUIDField(), blank=True, default=list)
+    completed_tasks = SafeArrayField(models.UUIDField(), blank=True, default=list)
+    incomplete_tasks = SafeArrayField(models.UUIDField(), blank=True, default=list)
     evening_insights = models.TextField(blank=True)
     tomorrow_priorities = models.JSONField(default=list, blank=True)
 
@@ -427,7 +427,7 @@ class UserProfile(models.Model):
     timezone = models.CharField(max_length=64, default="UTC")
     working_hours_start = models.TimeField(null=True, blank=True)
     working_hours_end = models.TimeField(null=True, blank=True)
-    working_days = ArrayField(models.IntegerField(), blank=True, default=list)  # 0=Monday
+    working_days = SafeArrayField(models.IntegerField(), blank=True, default=list)  # 0=Monday
 
     # Goals and priorities
     primary_goals = models.JSONField(default=list, blank=True)
@@ -477,7 +477,7 @@ class IntegrationConnection(OwnedModel):
 
     # Connection metadata
     connected_account = models.CharField(max_length=255, blank=True)
-    scopes = ArrayField(models.CharField(max_length=128), blank=True, default=list)
+    scopes = SafeArrayField(models.CharField(max_length=128), blank=True, default=list)
 
     last_synced_at = models.DateTimeField(null=True, blank=True)
     last_error = models.TextField(blank=True)

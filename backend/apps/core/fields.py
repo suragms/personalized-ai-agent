@@ -79,3 +79,26 @@ class EncryptedCharField(models.CharField):
                 except (InvalidToken, TypeError, ValueError):
                     pass
         return value
+
+class SafeArrayField(models.JSONField):
+    """
+    Cross-backend array field: uses PostgreSQL ArrayField on PostgreSQL,
+    and JSONField (supporting list values) on SQLite/other backends for test compatibility.
+    """
+    def __init__(self, base_field=None, size=None, **kwargs):
+        self.base_field = base_field
+        self.size = size
+        kwargs.setdefault('default', list)
+        super().__init__(**kwargs)
+
+    def db_type(self, connection):
+        if connection.vendor == 'postgresql':
+            try:
+                from django.contrib.postgres.fields import ArrayField
+                return ArrayField(self.base_field, size=self.size).db_type(connection)
+            except Exception:
+                pass
+        return super().db_type(connection)
+
+    def formfield(self, **kwargs):
+        return super().formfield(**kwargs)
