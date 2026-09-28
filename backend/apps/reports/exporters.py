@@ -85,14 +85,19 @@ def export_xlsx(report) -> tuple[bytes, str, str]:
     # Flatten the report data into rows.
     data = report.data or {}
     def walk(prefix, mapping):
-        for key, value in mapping.items():
-            if isinstance(value, (dict, list)):
-                if isinstance(value, list) and value and isinstance(value[0], dict):
-                    ws.append([f"{prefix}{key} (count)", len(value)])
-                    continue
-                walk(f"{prefix}{key} > ", value)
-            else:
-                ws.append([f"{prefix}{key}".strip(" >"), value])
+        if isinstance(mapping, dict):
+            for key, value in mapping.items():
+                if isinstance(value, dict):
+                    walk(f"{prefix}{key} > ", value)
+                elif isinstance(value, list):
+                    if value and isinstance(value[0], dict):
+                        ws.append([f"{prefix}{key} (count)", len(value)])
+                    else:
+                        ws.append([f"{prefix}{key}".strip(" >"), ", ".join(str(v) for v in value)])
+                else:
+                    ws.append([f"{prefix}{key}".strip(" >"), value])
+        elif isinstance(mapping, list):
+            ws.append([prefix.strip(" >"), ", ".join(str(v) for v in mapping)])
 
     walk("", data)
     ws.append([])

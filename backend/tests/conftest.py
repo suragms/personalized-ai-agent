@@ -53,7 +53,7 @@ def seeded(owner):
     r = Repository.objects.create(
         owner=owner,
         name="legacy-dashboard",
-        full_name="hexastack/legacy-dashboard",
+        full_name="suragdev/legacy-dashboard",
         status="active",
         language="TypeScript",
         stars=0,
@@ -63,13 +63,13 @@ def seeded(owner):
     Repository.objects.create(
         owner=owner,
         name="active-repo",
-        full_name="hexastack/active-repo",
+        full_name="suragdev/active-repo",
         status="active",
         language="Python",
         last_commit_at=timezone.now(),
     )
-    Repository.objects.create(owner=owner, name="repo3", full_name="hexastack/repo3", last_commit_at=timezone.now())
-    Repository.objects.create(owner=owner, name="repo4", full_name="hexastack/repo4", last_commit_at=timezone.now())
+    Repository.objects.create(owner=owner, name="repo3", full_name="suragdev/repo3", last_commit_at=timezone.now())
+    Repository.objects.create(owner=owner, name="repo4", full_name="suragdev/repo4", last_commit_at=timezone.now())
     
     Commit.objects.create(
         owner=owner,
@@ -78,8 +78,22 @@ def seeded(owner):
         message="init",
         author="surag",
         date=timezone.now() - timedelta(days=1),
-        additions=100,
+        additions=1000,
         deletions=10
     )
+    for i in range(5):
+        Commit.objects.create(
+            owner=owner,
+            repository=r,
+            sha=f"commit{i}",
+            message=f"msg {i}",
+            author="surag",
+            date=timezone.now() - timedelta(days=i),
+            additions=500,
+            deletions=10
+        )
+
+    from github.services import update_daily_metrics
+    update_daily_metrics(owner)
 
     return owner

@@ -28,7 +28,7 @@ def test_at_risk_detects_inactive(seeded):
 
 @pytest.mark.django_db
 def test_repo_status_refresh(seeded):
-    Repository.objects.filter(owner=seeded, full_name="hexastack/legacy-dashboard").update(status="active")
+    Repository.objects.filter(owner=seeded, full_name="suragdev/legacy-dashboard").update(status="active")
     risky = at_risk_repositories(seeded)
     legacy = next(r for r in risky if "legacy-dashboard" in r["name"])
     assert legacy["status"] == "inactive"
