@@ -1,9 +1,8 @@
 """Intelligence Engine service layer — core business logic."""
 import logging
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from typing import Any
 
-from django.db.models import Q
 from django.utils import timezone
 
 from accounts.models import User
@@ -11,9 +10,7 @@ from accounts.models import User
 from .models import (
     Alert,
     DailyPlan,
-    DataSnapshot,
     DataSource,
-    Decision,
     Goal,
     Insight,
     IntegrationConnection,

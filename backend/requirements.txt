@@ -32,6 +32,7 @@ python-docx>=1.1
 pydantic>=2.10
 python-dotenv>=1.0
 requests>=2.32
+gunicorn>=23.0
 
 # ── Testing & Monitoring ──────────────────────────────────────────────────
 pytest>=8.3

@@ -47,5 +47,5 @@ class FocusSessionSerializer(serializers.ModelSerializer):
 class BriefingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Briefing
-        fields = ("id", "kind", "date", "content", "data", "created_at")
-        read_only_fields = ("id", "created_at")
+        fields = ("id", "kind", "date", "content", "data", "provenance", "created_at")
+        read_only_fields = ("id", "created_at", "provenance")

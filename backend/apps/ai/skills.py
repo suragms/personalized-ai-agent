@@ -1,17 +1,18 @@
-import os
+import builtins
 import json
 import logging
-from typing import Dict, List, Optional, Any
-from pydantic import BaseModel, Field, ValidationError
+import os
+from typing import Any
 
 from django.conf import settings
+from pydantic import BaseModel, Field, ValidationError
 
 logger = logging.getLogger("ai")
 
 class ToolDefinition(BaseModel):
     name: str
     description: str
-    input_schema: Dict[str, Any]
+    input_schema: dict[str, Any]
 
 class SkillManifest(BaseModel):
     id: str = Field(..., pattern=r'^[a-z0-9_-]+$')
@@ -21,14 +22,14 @@ class SkillManifest(BaseModel):
     category: str
     author: str = ""
     instructions: str = "" # Populated from SKILL.md
-    input_schema: Dict[str, Any] = Field(default_factory=dict)
-    output_schema: Dict[str, Any] = Field(default_factory=dict)
-    required_permissions: List[str] = Field(default_factory=list)
-    required_integrations: List[str] = Field(default_factory=list)
-    required_provider_capabilities: List[str] = Field(default_factory=list)
-    tools: List[ToolDefinition] = Field(default_factory=list)
-    configuration_schema: Dict[str, Any] = Field(default_factory=dict)
-    safety_constraints: List[str] = Field(default_factory=list)
+    input_schema: dict[str, Any] = Field(default_factory=dict)
+    output_schema: dict[str, Any] = Field(default_factory=dict)
+    required_permissions: list[str] = Field(default_factory=list)
+    required_integrations: list[str] = Field(default_factory=list)
+    required_provider_capabilities: list[str] = Field(default_factory=list)
+    tools: list[ToolDefinition] = Field(default_factory=list)
+    configuration_schema: dict[str, Any] = Field(default_factory=dict)
+    safety_constraints: list[str] = Field(default_factory=list)
     enabled: bool = True
 
 class SkillRegistryError(Exception):
@@ -37,14 +38,14 @@ class SkillRegistryError(Exception):
 class SkillRegistry:
     def __init__(self, skills_dir: str = None):
         self.skills_dir = skills_dir or os.path.join(settings.BASE_DIR, "skills")
-        self._skills: Dict[str, SkillManifest] = {}
+        self._skills: dict[str, SkillManifest] = {}
 
-    def discover(self) -> Dict[str, str]:
+    def discover(self) -> dict[str, str]:
         """Finds skills by looking for manifest.json in subdirectories."""
         found = {}
         if not os.path.exists(self.skills_dir):
             return found
-            
+
         for d in os.listdir(self.skills_dir):
             path = os.path.join(self.skills_dir, d)
             if os.path.isdir(path):
@@ -60,26 +61,26 @@ class SkillRegistry:
     def load(self, clear=True):
         if clear:
             self._skills.clear()
-            
+
         found = self.discover()
         errors = []
-        
+
         for folder_name, paths in found.items():
             try:
-                with open(paths["manifest"], "r", encoding="utf-8") as f:
+                with open(paths["manifest"], encoding="utf-8") as f:
                     data = json.load(f)
-                    
+
                 # Read SKILL.md if it exists
                 instructions = ""
                 if os.path.exists(paths["skill_md"]):
-                    with open(paths["skill_md"], "r", encoding="utf-8") as f:
+                    with open(paths["skill_md"], encoding="utf-8") as f:
                         instructions = f.read()
                 else:
                     errors.append({"folder": folder_name, "error": "Missing SKILL.md"})
                     continue
-                    
+
                 data["instructions"] = instructions
-                
+
                 # Check for ID mismatch between folder and ID
                 if data.get("id") != folder_name:
                     errors.append({"folder": folder_name, "error": f"ID in manifest ({data.get('id')}) does not match folder name."})
@@ -87,20 +88,20 @@ class SkillRegistry:
 
                 # Validate schema via Pydantic
                 manifest = SkillManifest(**data)
-                
+
                 # Check for duplicates
                 if manifest.id in self._skills:
                     errors.append({"folder": folder_name, "error": f"Duplicate skill ID: {manifest.id}"})
                     continue
-                    
+
                 # Validate safe tools
                 from .tools import TOOL_REGISTRY
                 for t in manifest.tools:
                     if t.name not in TOOL_REGISTRY:
                         raise ValueError(f"Unsafe or unknown tool requested: {t.name}")
-                
+
                 self._skills[manifest.id] = manifest
-                
+
             except json.JSONDecodeError as e:
                 errors.append({"folder": folder_name, "error": f"Invalid JSON: {str(e)}"})
             except ValidationError as e:
@@ -111,13 +112,13 @@ class SkillRegistry:
         if errors:
             # We log but do not crash the app
             logger.warning(f"Skill registry encountered loading errors: {errors}")
-            
+
         return {"loaded": len(self._skills), "errors": errors}
 
-    def get(self, skill_id: str) -> Optional[SkillManifest]:
+    def get(self, skill_id: str) -> SkillManifest | None:
         return self._skills.get(skill_id)
 
-    def list(self) -> List[SkillManifest]:
+    def list(self) -> builtins.list[SkillManifest]:
         return list(self._skills.values())
 
 # Global registry instance
@@ -126,10 +127,13 @@ registry = SkillRegistry()
 class SkillExecutor:
     def execute(self, user, skill_id: str, context: str):
         from django.utils import timezone
-        from .models import UserSkillConfig, SkillExecutionLog
-        from .permissions import check_permission, has_integration, check_provider_capabilities
-        from .tools import TOOL_REGISTRY
+
+        from core.connectivity import sanitize_error_message
+
+        from .models import SkillExecutionLog, UserSkillConfig
+        from .permissions import check_permission, check_provider_capabilities, has_integration
         from .routing import AIRoutingService
+        from .tools import TOOL_REGISTRY
 
         skill = registry.get(skill_id)
         if not skill:
@@ -138,7 +142,7 @@ class SkillExecutor:
         # 1. Enabled check
         if not skill.enabled:
             raise SkillRegistryError("SKILL_DISABLED")
-            
+
         config = UserSkillConfig.objects.filter(owner=user, skill_id=skill_id).first()
         if config and not config.enabled:
             raise SkillRegistryError("SKILL_DISABLED_BY_USER")
@@ -157,7 +161,7 @@ class SkillExecutor:
         svc = AIRoutingService(user)
         conns = svc._get_connections_to_try()
         conn = conns[0] if conns else None
-        
+
         # We don't crash if mock is used and capabilities are empty
         if conn and not check_provider_capabilities(conn, skill.required_provider_capabilities):
             raise SkillRegistryError("PROVIDER_CAPABILITY_MISSING")
@@ -168,14 +172,16 @@ class SkillExecutor:
             skill_id=skill.id,
             skill_version=skill.version,
             started_at=timezone.now(),
-            status="running"
+            status="running",
+            provider_id=conn.provider_id if conn else "",
+            model=conn.model if conn else "",
         )
 
         try:
             # 5. Configuration check
             # For this version, assume config is validated via Pydantic model if we had one
             # user_config = config.configuration if config else {}
-            
+
             # 6. Execute (Simplest possible single-tool execution for v1)
             result_data = {}
             if skill.tools:
@@ -198,7 +204,7 @@ class SkillExecutor:
 
         except Exception as e:
             log.status = "error"
-            log.error_code = str(e)[:128]
+            log.error_code = sanitize_error_message(e)[:128]
             log.completed_at = timezone.now()
             log.save()
-            raise SkillRegistryError(str(e))
+            raise SkillRegistryError(sanitize_error_message(e)) from e

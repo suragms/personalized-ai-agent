@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MarkdownView } from "@/components/MarkdownView";
+import { ProvenanceBadge } from "@/components/ProvenanceBadge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useBriefing, useCalendar, useGenerateBriefing, useTasks, useUpdateTask } from "@/hooks";
 import type { Task } from "@/types";
@@ -35,8 +36,12 @@ export default function TasksCalendar() {
   }
 
   async function onBriefing(kind: "morning" | "eod") {
-    await generate.mutateAsync(kind);
-    toast.success(kind === "morning" ? "Morning briefing generated" : "End-of-day wrap-up generated");
+    try {
+      await generate.mutateAsync(kind);
+      toast.success(kind === "morning" ? "Morning briefing generated" : "End-of-day wrap-up generated");
+    } catch {
+      // Error toast is handled by the global MutationCache handler.
+    }
   }
 
   return (
@@ -71,13 +76,19 @@ export default function TasksCalendar() {
                 <CardContent className="max-h-[30rem] space-y-4 overflow-y-auto p-4">
                   {morning?.results?.[0] && (
                     <div>
-                      <p className="mb-1 text-xs font-medium text-muted">MORNING · {shortDate(morning.results[0].date)}</p>
+                      <p className="mb-1 flex flex-wrap items-center gap-1.5 text-xs font-medium text-muted">
+                        MORNING · {shortDate(morning.results[0].date)}
+                        <ProvenanceBadge provenance={morning.results[0].provenance} />
+                      </p>
                       <MarkdownView content={morning.results[0].content} />
                     </div>
                   )}
                   {eod?.results?.[0] && (
                     <div className="border-t border-border pt-4">
-                      <p className="mb-1 text-xs font-medium text-muted">END OF DAY · {shortDate(eod.results[0].date)}</p>
+                      <p className="mb-1 flex flex-wrap items-center gap-1.5 text-xs font-medium text-muted">
+                        END OF DAY · {shortDate(eod.results[0].date)}
+                        <ProvenanceBadge provenance={eod.results[0].provenance} />
+                      </p>
                       <MarkdownView content={eod.results[0].content} />
                     </div>
                   )}

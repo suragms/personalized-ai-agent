@@ -2,7 +2,7 @@
 import logging
 from datetime import date, timedelta
 
-from ai.services import generate_prose
+from ai.services import generate_prose_detailed
 from ai.types import AgentResult
 
 from .models import LinkedInProfile, PostIdea, ProfileScore
@@ -116,14 +116,19 @@ def generate_post(owner) -> PostIdea:
         "- Small, reviewable PRs beat the big-bang\n\n"
         "Curious what resonates — what shipped in your world this week?"
     )
-    content = generate_prose( 
+    # skip_mock: keep the curated post unless a real provider rewrites it —
+    # the mock would digest the raw work log into bullet points.
+    content, provenance = generate_prose_detailed(
         system=(
             "You are a LinkedIn social strategist. Turn the developer's work log into an "
             "engaging, human post (under 200 words). Return only the post body."
         ),
         user=f"Work log:\n{work}",
         fallback=template,
+        owner=owner,
+        skip_mock=True,
     )
+    logger.info("LinkedIn post provenance: %s", provenance)
     return PostIdea.objects.create(owner=owner, topic="Weekly progress", content=content, hashtags=hashtags, source="agent")
 
 

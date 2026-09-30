@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { getAccess } from "@/lib/api";
+import { API_BASE, getAccess } from "@/lib/api";
 
 export function useWebSocket(path: string, onMessage: (data: any) => void) {
   const savedHandler = useRef(onMessage);
@@ -9,9 +9,16 @@ export function useWebSocket(path: string, onMessage: (data: any) => void) {
     const token = getAccess();
     if (!token) return;
 
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.host;
-    const wsUrl = `${protocol}//${host}${path}?token=${token}`;
+    // Same-origin (dev via Vite proxy), or the configured backend origin.
+    let wsUrl: string;
+    if (API_BASE) {
+      const base = new URL(API_BASE);
+      base.protocol = base.protocol === "https:" ? "wss:" : "ws:";
+      wsUrl = `${base.origin}${path}?token=${encodeURIComponent(token)}`;
+    } else {
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      wsUrl = `${protocol}//${window.location.host}${path}?token=${encodeURIComponent(token)}`;
+    }
 
     const ws = new WebSocket(wsUrl);
 

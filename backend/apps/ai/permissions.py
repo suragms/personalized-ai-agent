@@ -1,5 +1,3 @@
-from django.conf import settings
-from .models import UserSkillConfig
 
 def check_permission(user, permission_name: str) -> bool:
     """Implement a basic permission check.
@@ -7,16 +5,16 @@ def check_permission(user, permission_name: str) -> bool:
     or explicit user-granted permissions if it was a real ACL system.
     """
     from accounts.models import User
-    
+
     # Example logic: Owners get ai.* and memory.*
     # We will expand this as needed.
     if user.role == User.OWNER:
         return True
-    
+
     # Restrict destructive operations for viewers
     if "write" in permission_name:
         return False
-        
+
     return True
 
 def has_integration(user, integration_name: str) -> bool:
@@ -31,8 +29,7 @@ def check_provider_capabilities(conn, required: list) -> bool:
     """Check if the chosen provider connection has the required capabilities."""
     if not required:
         return True
-    
-    caps = conn.capabilities or {}
+
     for cap in required:
         if cap == "streaming" and not conn.provider.supports_streaming:
             return False
@@ -40,5 +37,5 @@ def check_provider_capabilities(conn, required: list) -> bool:
             return False
         if cap == "embeddings" and not conn.provider.supports_embeddings:
             return False
-            
+
     return True

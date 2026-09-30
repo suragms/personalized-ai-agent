@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/ui/empty-state";
 import { MarkdownView } from "@/components/MarkdownView";
+import { ProvenanceBadge } from "@/components/ProvenanceBadge";
 import { useGenerateReport, useReports } from "@/hooks";
 import { apiDownload } from "@/lib/api";
 import { reports } from "@/services";
@@ -73,7 +74,10 @@ export default function Reports() {
                             {shortDate(selected.period_start)} → {shortDate(selected.period_end)} · generated {shortDate(selected.created_at)}
                           </p>
                         </div>
-                        <Badge variant="info">{selected.generated_by}</Badge>
+                        <div className="flex items-center gap-1.5">
+                          <ProvenanceBadge provenance={selected.provenance} />
+                          <Badge variant="info">{selected.generated_by}</Badge>
+                        </div>
                       </div>
                       <MarkdownView content={selected.content} className="max-h-[32rem] overflow-y-auto pr-2" />
                     </>

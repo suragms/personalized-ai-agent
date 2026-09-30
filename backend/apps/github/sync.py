@@ -10,12 +10,13 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from django.utils import timezone
-
-from accounts.models import User
 from intelligence.models import DataSnapshot, DataSource
 from intelligence.services import IntelligenceService
 
-from .models import Branch, Commit, Issue, PullRequest, Release, Repository
+from accounts.models import User
+from core.connectivity import sanitize_error_message
+
+from .models import Commit, Issue, PullRequest, Release, Repository
 from .oauth import get_connection, make_api_request
 
 logger = logging.getLogger("github")
@@ -44,10 +45,11 @@ class GitHubSyncService:
             "errors": [],
         }
 
+        data_source = None
         try:
             # Create or get data source
             data_source = self._get_or_create_data_source()
-            data_source.state = "syncing"
+            data_source.state = "connecting"
             data_source.save()
 
             # Sync repositories first
@@ -90,6 +92,9 @@ class GitHubSyncService:
             # Update connection
             self.connection.last_synced_at = timezone.now()
             self.connection.last_error = ""
+            self.connection.error_code = ""
+            self.connection.retryable = False
+            self.connection.status = "connected"
             self.connection.save()
 
             # Generate insights after successful sync
@@ -99,14 +104,14 @@ class GitHubSyncService:
             results["status"] = "success"
 
         except Exception as e:
-            error_msg = f"GitHub sync failed: {e}"
+            error_msg = sanitize_error_message(f"GitHub sync failed: {e}")
             logger.error(error_msg)
             results["errors"].append(error_msg)
             results["status"] = "error"
 
-            # Update data source error state
-            if data_source:
-                data_source.state = "error"
+            # Update data source error state (may be None if creation failed)
+            if data_source is not None:
+                data_source.state = "api_error"
                 data_source.last_error = error_msg
                 data_source.save()
 

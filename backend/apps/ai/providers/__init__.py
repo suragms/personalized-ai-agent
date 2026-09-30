@@ -7,8 +7,8 @@ from .getunikey_provider import GetUniKeyProvider
 from .groq_provider import GroqProvider
 from .mock import MockProvider
 from .ollama_provider import OllamaProvider
-from .opencode_provider import OpenCodeProvider
 from .openai_provider import OpenAIProvider
+from .opencode_provider import OpenCodeProvider
 
 _PROVIDERS: dict[str, type[LLMProvider]] = {
     "gemini": GeminiProvider,

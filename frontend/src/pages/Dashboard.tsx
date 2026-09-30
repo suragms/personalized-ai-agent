@@ -1,4 +1,4 @@
-import { BrainCircuit, Github, TrendingUp, Bell, CalendarDays, AlertCircle, RefreshCw, Loader2 } from "lucide-react";
+import { BrainCircuit, Github, TrendingUp, Bell, CalendarDays, AlertCircle, RefreshCw, Loader2, Activity } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
@@ -15,8 +15,10 @@ import {
   useDailyPlan,
   useGitHubSync,
 } from "@/hooks/useIntelligence";
+import { useSystemHealth } from "@/hooks";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Insight, Alert } from "@/services/intelligence";
+import { statusLabel, statusTone } from "@/lib/status";
 import { cn } from "@/lib/utils";
 
 const SEVERITY_VARIANT: Record<string, "critical" | "warning" | "info" | "success" | "default"> = {
@@ -284,6 +286,9 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* System health â€” live service probes from GET /api/health/ */}
+      <SystemHealthCard />
+
       {/* Sync error */}
       {syncMutation.isError && (
         <div className="mt-4 flex items-start gap-2 rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-500">
@@ -329,5 +334,51 @@ function InsightRow({ insight }: { insight: Insight }) {
         <p className="text-[11px] text-primary">{insight.recommended_action}</p>
       )}
     </li>
+  );
+}
+
+function SystemHealthCard() {
+  const { data: health, isLoading, isError } = useSystemHealth();
+
+  if (isLoading) {
+    return (
+      <Card className="mt-4">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-1.5 text-sm">
+            <Activity className="h-4 w-4" /> System Health
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Skeleton className="h-4 w-1/3" />
+          <Skeleton className="h-4 w-2/3" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isError || !health) return null;
+
+  const overallVariant = health.status === "ok" ? "success" : health.status === "degraded" ? "warning" : "critical";
+  const services = Object.entries(health.services);
+
+  return (
+    <Card className="mt-4">
+      <CardHeader className="flex-row items-center justify-between pb-2">
+        <CardTitle className="flex items-center gap-1.5 text-sm">
+          <Activity className="h-4 w-4" /> System Health
+        </CardTitle>
+        <Badge variant={overallVariant}>{health.status}</Badge>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-wrap gap-2">
+          {services.map(([name, check]) => (
+            <Badge key={name} variant={statusTone(check.status)} title={check.detail ?? undefined}>
+              {name}: {statusLabel(check.status)}
+            </Badge>
+          ))}
+        </div>
+        <p className="mt-2 text-[11px] text-muted">Live service checks — refreshed every minute.</p>
+      </CardContent>
+    </Card>
   );
 }

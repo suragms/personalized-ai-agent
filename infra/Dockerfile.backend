@@ -9,7 +9,8 @@ COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend/ .
-COPY .env .env.example ./
+# Ship only the example env file — a real .env must never enter the image.
+COPY .env.example ./
 
 EXPOSE 8000
 

@@ -1,5 +1,6 @@
 """OpenCode Zen provider."""
 from django.conf import settings
+
 from .openai_provider import OpenAIProvider
 
 

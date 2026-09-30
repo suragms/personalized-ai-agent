@@ -89,11 +89,11 @@ If you discover a security vulnerability, please send an email to **security@you
 
 ### Current Implementation
 
-1. **AI Provider Keys**: When using real AI providers (OpenAI, Gemini), API keys are stored in environment variables. Ensure these are secured.
+1. **AI Provider Keys**: Platform-level provider keys come from environment variables. Per-user provider API keys entered in the UI are encrypted at rest with `ENCRYPTION_KEY` (Fernet) and never returned in full — APIs expose only a masked form. Secure the environment variables and back up `ENCRYPTION_KEY`.
 
 2. **OAuth Flow**: GitHub/Google OAuth uses manual code exchange. Ensure redirect URIs are properly configured in production.
 
-3. **JWT Storage**: Frontend stores JWT tokens in memory (React context). They're not persisted in localStorage to reduce XSS risk.
+3. **JWT Storage**: The frontend persists JWTs in `localStorage` (`agent_access` / `agent_refresh`). This is convenient but readable by JavaScript — keep dependencies audited to limit XSS exposure. WebSocket connections pass the access token as a `?token=` query parameter (validated server-side; invalid tokens are rejected with close code 4001).
 
 4. **CORS**: Configured for localhost in development. Update `CORS_ALLOWED_ORIGINS` for production.
 

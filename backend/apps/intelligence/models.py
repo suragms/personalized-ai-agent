@@ -1,8 +1,8 @@
 """Intelligence Engine models — insights, recommendations, alerts, goals, decisions, reports."""
 from django.db import models
-from core.fields import SafeArrayField
 
-from core.models import OwnedModel, TimeStampedModel, UUIDModel
+from core.fields import EncryptedCharField, SafeArrayField
+from core.models import OwnedModel
 
 
 # ── Data Provenance ────────────────────────────────────────────────────────
@@ -22,13 +22,24 @@ class DataSource(OwnedModel):
         ("derived", "AI-Derived"),
     ]
 
+    # Unified connectivity vocabulary (see core.connectivity.ConnectivityStatus).
+    # Values are lowercase on the wire; labels are display text.
     STATE_CHOICES = [
         ("connected", "Connected"),
-        ("authorized", "Authorized"),
+        ("connecting", "Connecting"),
         ("disconnected", "Disconnected"),
-        ("error", "Error"),
+        ("not_configured", "Not Configured"),
+        ("authentication_failed", "Authentication Failed"),
+        ("permission_denied", "Permission Denied"),
+        ("rate_limited", "Rate Limited"),
+        ("timeout", "Timeout"),
+        ("network_error", "Network Error"),
+        ("api_error", "API Error"),
+        ("service_unavailable", "Service Unavailable"),
+        ("invalid_credentials", "Invalid Credentials"),
         ("stale", "Stale"),
-        ("unavailable", "Unavailable"),
+        ("no_data", "No Data"),
+        ("unknown_error", "Unknown Error"),
     ]
 
     source_type = models.CharField(max_length=32, choices=SOURCE_TYPE_CHOICES, db_index=True)
@@ -462,17 +473,28 @@ class IntegrationConnection(OwnedModel):
 
     STATUS_CHOICES = [
         ("connected", "Connected"),
-        ("expired", "Expired"),
-        ("error", "Error"),
+        ("connecting", "Connecting"),
         ("disconnected", "Disconnected"),
+        ("not_configured", "Not Configured"),
+        ("authentication_failed", "Authentication Failed"),
+        ("permission_denied", "Permission Denied"),
+        ("rate_limited", "Rate Limited"),
+        ("timeout", "Timeout"),
+        ("network_error", "Network Error"),
+        ("api_error", "API Error"),
+        ("service_unavailable", "Service Unavailable"),
+        ("invalid_credentials", "Invalid Credentials"),
+        ("stale", "Stale"),
+        ("no_data", "No Data"),
+        ("unknown_error", "Unknown Error"),
     ]
 
     platform = models.CharField(max_length=64, choices=PLATFORM_CHOICES, db_index=True)
     status = models.CharField(max_length=32, choices=STATUS_CHOICES, default="disconnected", db_index=True)
 
     # OAuth tokens (encrypted)
-    access_token = models.TextField(blank=True)
-    refresh_token = models.TextField(blank=True)
+    access_token = EncryptedCharField(max_length=4096, blank=True)
+    refresh_token = EncryptedCharField(max_length=4096, blank=True)
     expires_at = models.DateTimeField(null=True, blank=True)
 
     # Connection metadata
@@ -481,6 +503,8 @@ class IntegrationConnection(OwnedModel):
 
     last_synced_at = models.DateTimeField(null=True, blank=True)
     last_error = models.TextField(blank=True)
+    error_code = models.CharField(max_length=64, blank=True)
+    retryable = models.BooleanField(default=False)
 
     class Meta(OwnedModel.Meta):
         constraints = [

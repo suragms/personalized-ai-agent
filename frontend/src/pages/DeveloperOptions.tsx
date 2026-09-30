@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import {
   useCreateProviderConnection,
@@ -30,30 +31,66 @@ import {
   useProviderConnections,
   useSkillExecutions,
   useSkills,
+  useSystemHealth,
   useTestProviderConnection,
   useTestSkill,
   useUpdateProviderConnection,
   useValidateSkill,
 } from "@/hooks";
 import type { ProviderConnection, ProviderConnectionFormData } from "@/types";
+import { normalizeStatus, statusLabel, statusTone } from "@/lib/status";
 import { cn } from "@/lib/utils";
 
 // ── Helpers ──────────────────────────────────────────────────────────────
+/**
+ * Human labels for AI-provider error codes.
+ *
+ * Covers both surfaces: the `AI_PROVIDER_*` codes returned by connection
+ * tests/diagnostics, and the lowercase snake_case codes persisted on
+ * connections (`auth_failed`, `rate_limited`, …). Lookup is case-insensitive.
+ */
+const ERROR_LABELS: Record<string, string> = {
+  // AI provider surface (AI_*)
+  AI_PROVIDER_NOT_CONFIGURED: "Provider not configured",
+  AI_PROVIDER_AUTH_FAILED: "Authentication failed",
+  AI_PROVIDER_TIMEOUT: "Timeout",
+  AI_PROVIDER_RATE_LIMITED: "Rate limited",
+  AI_PROVIDER_UNAVAILABLE: "Provider unavailable",
+  AI_MODEL_NOT_FOUND: "Model not found",
+  AI_PROVIDER_UNKNOWN_ERROR: "Unknown provider error",
+  // Persisted connection codes (lowercase snake_case)
+  not_configured: "Not configured",
+  auth_failed: "Authentication failed",
+  invalid_credentials: "Invalid credentials",
+  permission_denied: "Permission denied",
+  rate_limited: "Rate limited",
+  timeout: "Timeout",
+  network_error: "Network error",
+  connection_refused: "Connection refused",
+  dns_error: "DNS error",
+  tls_error: "TLS error",
+  model_not_found: "Model not found",
+  invalid_base_url: "Invalid base URL",
+  api_error: "API error",
+  service_unavailable: "Service unavailable",
+  unknown_error: "Unknown error",
+  // Legacy uppercase spellings
+  INVALID_CREDENTIALS: "Invalid credentials",
+  FORBIDDEN: "Forbidden",
+  MODEL_NOT_FOUND: "Model not found",
+  RATE_LIMITED: "Rate limited",
+  TIMEOUT: "Timeout",
+  DNS_ERROR: "DNS error",
+  CONNECTION_REFUSED: "Connection refused",
+  TLS_ERROR: "TLS error",
+  INVALID_BASE_URL: "Invalid base URL",
+  PROVIDER_UNAVAILABLE: "Provider unavailable",
+  SERVER_ERROR: "Server error",
+};
+
 const normalizeErrorLabel = (code: string): string => {
-  const labels: Record<string, string> = {
-    INVALID_CREDENTIALS: "Invalid credentials",
-    FORBIDDEN: "Forbidden",
-    MODEL_NOT_FOUND: "Model not found",
-    RATE_LIMITED: "Rate limited",
-    TIMEOUT: "Timeout",
-    DNS_ERROR: "DNS error",
-    CONNECTION_REFUSED: "Connection refused",
-    TLS_ERROR: "TLS error",
-    INVALID_BASE_URL: "Invalid base URL",
-    PROVIDER_UNAVAILABLE: "Provider unavailable",
-    SERVER_ERROR: "Server error",
-  };
-  return labels[code] ?? code;
+  if (!code) return "";
+  return ERROR_LABELS[code] ?? ERROR_LABELS[code.toLowerCase()] ?? code;
 };
 
 // ── Provider Form ─────────────────────────────────────────────────────────
@@ -213,6 +250,11 @@ function ProviderCard({ conn, onDelete }: { conn: ProviderConnection; onDelete: 
             <div className="flex shrink-0 items-center gap-2">
               {conn.latency_ms != null && (
                 <span className="text-xs text-muted">{conn.latency_ms}ms</span>
+              )}
+              {conn.status && normalizeStatus(conn.status) !== "connected" && (
+                <Badge variant={statusTone(conn.status)} className="text-[10px]" title={conn.last_error_message || undefined}>
+                  {statusLabel(conn.status)}
+                </Badge>
               )}
               {isOk ? (
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
@@ -532,37 +574,98 @@ export default function DeveloperOptions() {
       )}
 
       {/* DIAGNOSTICS TAB */}
-      {activeTab === "diagnostics" && (
-        <div className="space-y-4">
-          <p className="text-sm text-muted">
-            Connectivity status for backend services and AI providers.
-          </p>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              { label: "Backend API", icon: <Server className="h-4 w-4" /> },
-              { label: "AI Provider", icon: <Cpu className="h-4 w-4" /> },
-              { label: "Skill Registry", icon: <Zap className="h-4 w-4" /> },
-            ].map((item) => (
-              <Card key={item.label}>
-                <CardContent className="flex items-center justify-between p-4">
-                  <div className="flex items-center gap-2 text-sm">
-                    {item.icon}
-                    {item.label}
-                  </div>
-                  {connections.length > 0 ? (
+      {activeTab === "diagnostics" && <DiagnosticsSection />}
+    </div>
+  );
+}
+
+// ── Diagnostics (real probes from GET /api/health/) ──────────────────────
+const SERVICE_ICONS: Record<string, React.ReactNode> = {
+  database: <Server className="h-4 w-4" />,
+  redis: <Zap className="h-4 w-4" />,
+  celery: <Activity className="h-4 w-4" />,
+  ai_provider: <Cpu className="h-4 w-4" />,
+  github: <Bot className="h-4 w-4" />,
+  google: <Wifi className="h-4 w-4" />,
+};
+
+function DiagnosticsSection() {
+  const { data: health, isLoading, isError } = useSystemHealth();
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+    );
+  }
+
+  if (isError || !health) {
+    return <p className="text-sm text-red-500">Could not reach the health endpoint — check the backend is running.</p>;
+  }
+
+  const overallTone = health.status === "ok" ? "success" : health.status === "degraded" ? "warning" : "critical";
+  const aiCheck = health.services["ai_provider"];
+  const aiMode = typeof aiCheck?.mode === "string" ? aiCheck.mode : undefined;
+  const integrations = Object.entries(health.integrations ?? {});
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-sm text-muted">Live probes from GET /api/health/</p>
+        <Badge variant={overallTone}>{health.status}</Badge>
+        {aiMode === "mock" && (
+          <Badge variant="info" title="The deterministic offline mock provider is active — no external AI calls are made">
+            Mock AI mode
+          </Badge>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {Object.entries(health.services).map(([name, check]) => {
+          const healthy = ["connected", "running", "configured"].includes(normalizeStatus(check.status));
+          return (
+            <Card key={name}>
+              <CardContent className="flex items-center justify-between p-4">
+                <div className="flex items-center gap-2 text-sm capitalize">
+                  {SERVICE_ICONS[name] ?? <Server className="h-4 w-4" />}
+                  {name.replace(/_/g, " ")}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant={statusTone(check.status)} title={check.detail || undefined}>
+                    {statusLabel(check.status)}
+                  </Badge>
+                  {healthy ? (
                     <CheckCircle2 className="h-4 w-4 text-green-500" />
                   ) : (
                     <WifiOff className="h-4 w-4 text-muted" />
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {integrations.length > 0 && (
+        <div className="rounded-lg border border-border p-3">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Your integrations</p>
+          <div className="flex flex-wrap gap-2">
+            {integrations.map(([platform, entry]) => (
+              <Badge key={platform} variant={statusTone(entry.status)}>
+                {platform}: {statusLabel(entry.status)}
+              </Badge>
             ))}
           </div>
-          <p className="text-xs text-muted">
-            For detailed diagnostics, use "Test Connection" on individual providers.
-          </p>
         </div>
       )}
+
+      <p className="text-xs text-muted">
+        Every status above is a real check (database, Redis, Celery workers, provider configuration) — nothing is
+        hard-coded. For per-provider details, use &quot;Test Connection&quot;.
+      </p>
     </div>
   );
 }

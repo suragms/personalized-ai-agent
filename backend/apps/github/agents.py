@@ -7,7 +7,7 @@ metrics. Fully deterministic with the mock provider.
 from datetime import date
 
 from ai.graphs import AgentGraph
-from ai.services import generate_prose
+from ai.services import generate_prose_detailed
 from ai.types import AgentResult
 from memory.services import remember_decision
 
@@ -55,7 +55,7 @@ def generate(state: dict) -> dict:
     lines += [f"- {r}" for r in recommendations]
     template = "\n".join(lines)
 
-    output = generate_prose( 
+    output, provenance = generate_prose_detailed(
         system=(
             "You are a GitHub analytics assistant. Turn the supplied metrics and "
             "recommendations into a concise weekly summary for a developer. "
@@ -63,8 +63,9 @@ def generate(state: dict) -> dict:
         ),
         user=template,
         fallback=template,
+        owner=state["owner"],
     )
-    return {"output": output}
+    return {"output": output, "provenance": provenance}
 
 
 def persist(state: dict) -> dict:
@@ -85,7 +86,7 @@ def persist(state: dict) -> dict:
             status="ok",
             summary=f"{state['analytics']['totals']['commits']} commits · score {state['analytics']['productivity_score']}",
             output=state["output"],
-            data=state["analytics"],
+            data={**state["analytics"], "provenance": state.get("provenance", "")},
         )
     }
 

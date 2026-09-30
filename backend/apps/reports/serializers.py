@@ -16,9 +16,10 @@ class ReportSerializer(serializers.ModelSerializer):
             "html",
             "data",
             "generated_by",
+            "provenance",
             "created_at",
         )
-        read_only_fields = ("id", "created_at")
+        read_only_fields = ("id", "created_at", "provenance")
 
 
 class ReportGenerateSerializer(serializers.Serializer):

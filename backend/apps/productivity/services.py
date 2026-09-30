@@ -4,7 +4,7 @@ from datetime import date, timedelta
 from django.db.models import Sum
 from django.utils import timezone
 
-from ai.services import generate_prose
+from ai.services import generate_prose_detailed
 from ai.types import AgentResult
 
 from .models import Briefing, CalendarEvent, FocusSession, Task
@@ -146,13 +146,17 @@ def generate_morning(owner) -> Briefing:
     lines += [f"- {b['time']} — {b['task']}" for b in data["suggested_schedule"]]
 
     template = "\n".join(lines)
-    content = generate_prose( 
+    content, provenance = generate_prose_detailed(
         system="You are a personal Chief of Staff writing a concise morning briefing for a full-stack developer. Use only the supplied data.",
         user=template,
         fallback=template,
+        owner=owner,
     )
     briefing, _ = Briefing.objects.update_or_create(
-        owner=owner, kind="morning", date=data["date"], defaults={"content": content, "data": data}
+        owner=owner,
+        kind="morning",
+        date=data["date"],
+        defaults={"content": content, "data": data, "provenance": provenance},
     )
     return briefing
 
@@ -192,13 +196,17 @@ def generate_eod(owner) -> Briefing:
     lines += [f"- {t['title']}" for t in data["tomorrow_plan"]]
 
     template = "\n".join(lines)
-    content = generate_prose( 
+    content, provenance = generate_prose_detailed(
         system="You are a personal Chief of Staff writing an end-of-day wrap-up. Use only the supplied data.",
         user=template,
         fallback=template,
+        owner=owner,
     )
     briefing, _ = Briefing.objects.update_or_create(
-        owner=owner, kind="eod", date=data["date"], defaults={"content": content, "data": data}
+        owner=owner,
+        kind="eod",
+        date=data["date"],
+        defaults={"content": content, "data": data, "provenance": provenance},
     )
     return briefing
 
@@ -206,9 +214,21 @@ def generate_eod(owner) -> Briefing:
 # ── Command-router helpers ────────────────────────────────────────────────
 def today_briefing(owner) -> AgentResult:
     briefing = generate_morning(owner)
-    return AgentResult(agent="productivity", status="ok", summary="Morning briefing", output=briefing.content, data=briefing.data)
+    return AgentResult(
+        agent="productivity",
+        status="ok",
+        summary="Morning briefing",
+        output=briefing.content,
+        data={**briefing.data, "provenance": briefing.provenance},
+    )
 
 
 def eod_wrap_up(owner) -> AgentResult:
     briefing = generate_eod(owner)
-    return AgentResult(agent="productivity", status="ok", summary="EOD wrap-up", output=briefing.content, data=briefing.data)
+    return AgentResult(
+        agent="productivity",
+        status="ok",
+        summary="EOD wrap-up",
+        output=briefing.content,
+        data={**briefing.data, "provenance": briefing.provenance},
+    )

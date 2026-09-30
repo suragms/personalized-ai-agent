@@ -31,7 +31,7 @@ python -m venv .venv
 .venv/Scripts/activate  # Windows; source .venv/bin/activate on Unix
 pip install -r requirements.txt
 python manage.py migrate
-python manage.py seed_demo
+python manage.py createsuperuser
 
 # 3. Frontend setup
 cd ../frontend

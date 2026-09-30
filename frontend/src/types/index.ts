@@ -109,6 +109,8 @@ export interface Briefing {
   date: string;
   content: string;
   data: Record<string, unknown>;
+  /** REAL_AI_PROVIDER | MOCK_PROVIDER | DETERMINISTIC_TEMPLATE */
+  provenance?: string;
   created_at: string;
 }
 
@@ -142,6 +144,8 @@ export interface Report {
   html: string;
   data: Record<string, unknown>;
   generated_by: string;
+  /** REAL_AI_PROVIDER | MOCK_PROVIDER | DETERMINISTIC_TEMPLATE */
+  provenance?: string;
   created_at: string;
 }
 
@@ -289,8 +293,11 @@ export interface ProviderConnection {
   api_key_masked: string;
   enabled: boolean;
   is_default: boolean;
+  status?: string;
   last_tested_at: string | null;
   last_error_code: string;
+  last_error_message?: string;
+  retryable?: boolean;
   latency_ms: number | null;
   capabilities: Record<string, unknown>;
   created_at: string;

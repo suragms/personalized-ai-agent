@@ -25,6 +25,9 @@ class Report(UUIDModel):
     html = models.TextField(blank=True)
     data = models.JSONField(default=dict, blank=True)
     generated_by = models.CharField(max_length=64, default="reports-agent")
+    # What actually produced `content`: REAL_AI_PROVIDER | MOCK_PROVIDER |
+    # DETERMINISTIC_TEMPLATE. Never presented as AI output when it was not.
+    provenance = models.CharField(max_length=32, blank=True, default="DETERMINISTIC_TEMPLATE")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

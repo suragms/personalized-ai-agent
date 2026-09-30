@@ -7,10 +7,10 @@ import logging
 from datetime import date, timedelta
 
 from django.utils import timezone
+from intelligence.models import Insight
+from intelligence.services import IntelligenceService
 
 from accounts.models import User
-from intelligence.models import Alert, Insight
-from intelligence.services import IntelligenceService
 
 from .models import Commit, Issue, PullRequest, Repository
 

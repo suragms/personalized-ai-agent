@@ -1,9 +1,8 @@
 from django.db import models
-from django.conf import settings
 from django.db.models import JSONField
 
-from core.models import OwnedModel
 from core.fields import EncryptedCharField
+from core.models import OwnedModel
 
 
 class ProviderDefinition(models.Model):
@@ -54,9 +53,12 @@ class ProviderConnection(OwnedModel):
     enabled = models.BooleanField(default=True)
     is_default = models.BooleanField(default=False)
 
-    # Diagnostics
+    # Diagnostics (status uses core.connectivity.ConnectivityStatus values)
+    status = models.CharField(max_length=32, default="disconnected")
     last_tested_at = models.DateTimeField(null=True, blank=True)
     last_error_code = models.CharField(max_length=64, blank=True)
+    last_error_message = models.TextField(blank=True)
+    retryable = models.BooleanField(default=False)
     latency_ms = models.IntegerField(null=True, blank=True)
     capabilities = JSONField(default=dict, blank=True)
 
@@ -74,10 +76,10 @@ class UserSkillConfig(OwnedModel):
     skill_id = models.CharField(max_length=255, db_index=True)
     enabled = models.BooleanField(default=True)
     configuration = JSONField(default=dict, blank=True)
-    
+
     class Meta(OwnedModel.Meta):
         unique_together = (("owner", "skill_id"),)
-        
+
     def __str__(self):
         return f"{self.owner.username} - {self.skill_id}"
 
@@ -85,17 +87,17 @@ class SkillExecutionLog(OwnedModel):
     """Safe metadata tracking for skill executions."""
     skill_id = models.CharField(max_length=255)
     skill_version = models.CharField(max_length=64, blank=True)
-    
+
     started_at = models.DateTimeField(db_index=True)
     completed_at = models.DateTimeField(null=True, blank=True)
-    
+
     status = models.CharField(max_length=64) # 'running', 'success', 'error', 'rejected'
-    
+
     provider_id = models.CharField(max_length=128, blank=True)
     model = models.CharField(max_length=255, blank=True)
     error_code = models.CharField(max_length=128, blank=True)
     latency_ms = models.IntegerField(null=True, blank=True)
     request_id = models.CharField(max_length=255, blank=True, db_index=True)
-    
+
     def __str__(self):
         return f"{self.skill_id} [{self.status}]"

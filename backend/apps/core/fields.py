@@ -1,10 +1,10 @@
 import base64
 import logging
-import sys
+
 from cryptography.fernet import Fernet, InvalidToken
 from django.conf import settings
-from django.db import models
 from django.core.exceptions import ImproperlyConfigured
+from django.db import models
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +79,7 @@ class SafeArrayField(_ArrayFieldBase):
         self.base_field = base_field
         self.size = size
         kwargs.setdefault('default', list)
-        
+
         if _USE_SQLITE:
             # JSONField does not accept base_field or size
             super().__init__(**kwargs)
@@ -92,12 +92,12 @@ class SafeArrayField(_ArrayFieldBase):
         # Always output the path to our proxy class, not the base class
         if path.startswith('django.db.models') or path.startswith('django.contrib.postgres'):
             path = 'core.fields.SafeArrayField'
-            
+
         # Ensure base_field and size are always preserved in the migration,
         # even if generated from a SQLite environment.
         if self.base_field is not None:
             kwargs['base_field'] = self.base_field
         if self.size is not None:
             kwargs['size'] = self.size
-            
+
         return name, path, args, kwargs

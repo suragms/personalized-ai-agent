@@ -2,7 +2,7 @@
 from datetime import date
 
 from ai.graphs import AgentGraph
-from ai.services import generate_prose
+from ai.services import generate_prose_detailed
 from ai.types import AgentResult
 from memory.services import remember_decision
 
@@ -35,12 +35,13 @@ def generate(state: dict) -> dict:
         else:
             lines.append("- Not enough data to predict delivery yet.")
     template = "\n".join(lines)
-    output = generate_prose( 
+    output, provenance = generate_prose_detailed(
         system="You are a project manager summarizing HexaStack project health. Use only supplied data.",
         user=template,
         fallback=template,
+        owner=state["owner"],
     )
-    return {"output": output}
+    return {"output": output, "provenance": provenance}
 
 
 def persist(state: dict) -> dict:
@@ -58,7 +59,7 @@ def persist(state: dict) -> dict:
             status="ok",
             summary=f"{len(state['metrics'])} project(s) analyzed",
             output=state["output"],
-            data={"projects": state["metrics"]},
+            data={"projects": state["metrics"], "provenance": state.get("provenance", "")},
         )
     }
 

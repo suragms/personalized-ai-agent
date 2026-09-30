@@ -1,9 +1,8 @@
 """Tests for encryption key configuration and EncryptedCharField security."""
+
 import pytest
-from unittest.mock import patch
 from django.core.exceptions import ImproperlyConfigured
 from django.test import override_settings
-
 
 # ── Unit tests for get_fernet() ──────────────────────────────────────────
 
@@ -13,8 +12,9 @@ def test_get_fernet_uses_encryption_key():
     from cryptography.fernet import Fernet
     valid_key = Fernet.generate_key().decode()
     with override_settings(ENCRYPTION_KEY=valid_key, DEBUG=False):
-        from apps.core.fields import get_fernet
-        import importlib, apps.core.fields as f
+        import importlib
+
+        import apps.core.fields as f
         importlib.reload(f)
         fern = f.get_fernet()
         assert fern is not None
@@ -23,7 +23,9 @@ def test_get_fernet_uses_encryption_key():
 def test_get_fernet_dev_fallback():
     """In DEBUG=True with no ENCRYPTION_KEY, falls back safely using SECRET_KEY."""
     with override_settings(ENCRYPTION_KEY=None, SECRET_KEY="dev-test-key", DEBUG=True):
-        import importlib, apps.core.fields as f
+        import importlib
+
+        import apps.core.fields as f
         importlib.reload(f)
         fern = f.get_fernet()
         assert fern is not None
@@ -32,7 +34,9 @@ def test_get_fernet_dev_fallback():
 def test_get_fernet_prod_no_key_raises():
     """In DEBUG=False without ENCRYPTION_KEY, get_fernet() must raise."""
     with override_settings(ENCRYPTION_KEY=None, SECRET_KEY="some-key", DEBUG=False):
-        import importlib, apps.core.fields as f
+        import importlib
+
+        import apps.core.fields as f
         importlib.reload(f)
         with pytest.raises(ImproperlyConfigured):
             f.get_fernet()
@@ -51,7 +55,8 @@ def _clean_prod_env(**overrides):
 
 def test_settings_prod_no_secret_key_raises():
     """settings.py must raise when SECRET_KEY is missing and DEBUG=False."""
-    import subprocess, sys
+    import subprocess
+    import sys
     result = subprocess.run(
         [sys.executable, "-c",
          "import os; "
@@ -70,7 +75,8 @@ def test_settings_prod_no_secret_key_raises():
 
 def test_settings_prod_no_encryption_key_raises():
     """settings.py must raise when ENCRYPTION_KEY is missing and DEBUG=False."""
-    import subprocess, sys
+    import subprocess
+    import sys
     result = subprocess.run(
         [sys.executable, "-c",
          "import os; "
@@ -90,7 +96,9 @@ def test_settings_prod_no_encryption_key_raises():
 
 def test_settings_prod_with_both_keys_succeeds():
     """settings.py initializes successfully when both keys are present and DEBUG=False."""
-    import subprocess, sys
+    import subprocess
+    import sys
+
     from cryptography.fernet import Fernet
     valid_key = Fernet.generate_key().decode()
     result = subprocess.run(
@@ -115,7 +123,7 @@ def test_settings_prod_with_both_keys_succeeds():
 @pytest.mark.django_db
 def test_encrypted_field_roundtrip(owner):
     """Encryption and decryption round-trip across the database boundary."""
-    from ai.models import ProviderDefinition, ProviderConnection
+    from ai.models import ProviderConnection, ProviderDefinition
     defn = ProviderDefinition.objects.create(
         id="roundtrip-test", display_name="Test", category="custom", protocol="openai_chat"
     )
@@ -128,7 +136,8 @@ def test_encrypted_field_roundtrip(owner):
 def test_encrypted_field_never_stores_plaintext(owner):
     """Raw DB value must NOT equal the plaintext API key."""
     from django.db import connection
-    from ai.models import ProviderDefinition, ProviderConnection
+
+    from ai.models import ProviderConnection, ProviderDefinition
     defn = ProviderDefinition.objects.create(
         id="plaintext-check", display_name="Test", category="custom", protocol="openai_chat"
     )
@@ -144,7 +153,8 @@ def test_encrypted_field_never_stores_plaintext(owner):
 def test_corrupted_ciphertext_does_not_crash(owner):
     """A corrupted ciphertext is handled gracefully — no unhandled exception."""
     from django.db import connection
-    from ai.models import ProviderDefinition, ProviderConnection
+
+    from ai.models import ProviderConnection, ProviderDefinition
     defn = ProviderDefinition.objects.create(
         id="corrupt-test", display_name="Test", category="custom", protocol="openai_chat"
     )
@@ -163,7 +173,8 @@ def test_corrupted_ciphertext_does_not_crash(owner):
 def test_encrypted_api_key_not_in_api_response(auth_client, owner):
     """Provider list endpoint must NEVER return plaintext API keys."""
     from django.urls import reverse
-    from ai.models import ProviderDefinition, ProviderConnection
+
+    from ai.models import ProviderConnection, ProviderDefinition
     defn = ProviderDefinition.objects.create(
         id="api-mask-test", display_name="Test", category="custom", protocol="openai_chat"
     )

@@ -68,6 +68,9 @@ class Briefing(OwnedModel):
     date = models.DateField(db_index=True)
     content = models.TextField()  # markdown
     data = models.JSONField(default=dict, blank=True)
+    # What actually produced `content`: REAL_AI_PROVIDER | MOCK_PROVIDER |
+    # DETERMINISTIC_TEMPLATE.
+    provenance = models.CharField(max_length=32, blank=True, default="DETERMINISTIC_TEMPLATE")
 
     class Meta:
         ordering = ["-date"]

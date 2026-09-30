@@ -8,6 +8,11 @@ services:
     plan: free
     diskSizeGB: 1
 
+  - type: redis
+    name: agent-redis
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+
   - type: web
     name: agent-backend
     runtime: python
@@ -24,6 +29,11 @@ services:
         value: "false"
       - key: SECRET_KEY
         generateValue: true
+      # REQUIRED: settings.py refuses to boot without a valid Fernet key.
+      # Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+      # Set it in the Render dashboard after the first import (sync: false).
+      - key: ENCRYPTION_KEY
+        sync: false
       - key: POSTGRES_HOST
         fromDatabase:
           name: agent-postgres
@@ -45,11 +55,21 @@ services:
           name: agent-postgres
           property: port
       - key: REDIS_URL
-        sync: false
+        fromService:
+          name: agent-redis
+          type: redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          name: agent-redis
+          type: redis
+          property: connectionString
       - key: AI_PROVIDER
         value: mock
       - key: DJANGO_ALLOWED_HOSTS
-        value: "*,agent-backend.onrender.com"
+        value: "agent-backend.onrender.com,localhost,127.0.0.1"
+      - key: CORS_ALLOWED_ORIGINS
+        value: "https://agent-frontend.onrender.com"
 
   - type: worker
     name: agent-worker
@@ -59,6 +79,17 @@ services:
     startCommand: celery -A config worker --beat -l info
     plan: free
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.14.4
+      - key: DEBUG
+        value: "false"
+      - key: SECRET_KEY
+        fromService:
+          name: agent-backend
+          type: web
+          envVarKey: SECRET_KEY
+      - key: ENCRYPTION_KEY
+        sync: false
       - key: POSTGRES_HOST
         fromDatabase:
           name: agent-postgres
@@ -80,7 +111,15 @@ services:
           name: agent-postgres
           property: port
       - key: REDIS_URL
-        sync: false
+        fromService:
+          name: agent-redis
+          type: redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          name: agent-redis
+          type: redis
+          property: connectionString
       - key: AI_PROVIDER
         value: mock
 

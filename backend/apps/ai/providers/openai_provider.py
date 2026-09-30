@@ -1,23 +1,25 @@
 """OpenAI provider."""
 from django.conf import settings
+
 from .base import LLMProvider
+
 
 class OpenAIProvider(LLMProvider):
     name = "openai"
 
     def _client(self):
         from openai import OpenAI
-        
+
         kwargs = {}
-        # Prioritize connection args, fallback to settings Defaults 
+        # Prioritize connection args, fallback to settings Defaults
         key = self.api_key or getattr(settings, "OPENAI_API_KEY", "")
         if key:
             kwargs["api_key"] = key
-            
+
         base = self.base_url or getattr(settings, "OPENAI_BASE_URL", "")
         if base:
             kwargs["base_url"] = base
-            
+
         try:
             return OpenAI(**kwargs)
         except Exception:

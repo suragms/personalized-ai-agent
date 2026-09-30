@@ -1,6 +1,8 @@
 """Intelligence Engine URL routing."""
-from django.urls import path, include
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
+
+from core.connectivity_views import DataHealthView
 
 from .views import (
     AlertViewSet,
@@ -30,5 +32,6 @@ router.register(r"profile", UserProfileViewSet, basename="profile")
 router.register(r"integrations", IntegrationConnectionViewSet, basename="integration")
 
 urlpatterns = [
+    path("data-health/", DataHealthView.as_view(), name="data-health"),
     path("", include(router.urls)),
 ]

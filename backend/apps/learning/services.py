@@ -2,7 +2,7 @@
 import logging
 from datetime import date
 
-from ai.services import generate_prose
+from ai.services import generate_prose_detailed
 from ai.types import AgentResult
 
 from .models import LearningRoadmap, LearningSuggestion
@@ -89,15 +89,20 @@ def run_agent(owner) -> AgentResult:
     lines += ["", "## Roadmap", ""]
     lines += [f"- **{i['topic']}**: {i['resource']} — {i['why']}" for i in roadmap.items]
     template = "\n".join(lines)
-    output = generate_prose( 
+    output, provenance = generate_prose_detailed(
         system="You are a learning advisor for a full-stack AI engineer. Return a concise daily learning plan using only the supplied items.",
         user=template,
         fallback=template,
+        owner=owner,
     )
     return AgentResult(
         agent="learning",
         status="ok",
         summary=f"{len(suggestions)} suggestion(s) · roadmap ready",
         output=output,
-        data={"suggestions": [{"title": s.title, "kind": s.kind, "reason": s.reason} for s in suggestions], "roadmap": roadmap.items},
+        data={
+            "suggestions": [{"title": s.title, "kind": s.kind, "reason": s.reason} for s in suggestions],
+            "roadmap": roadmap.items,
+            "provenance": provenance,
+        },
     )

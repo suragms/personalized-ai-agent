@@ -26,6 +26,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useProviders } from "@/hooks";
 import { useProfile, useUpdateProfile, useGitHubStatus, useIntegrations } from "@/hooks/useIntelligence";
+import { normalizeStatus, statusLabel, statusTone } from "@/lib/status";
 import { cn } from "@/lib/utils";
 
 export default function Profile() {
@@ -213,23 +214,25 @@ export default function Profile() {
             {/* Other integrations */}
             {integrations
               .filter((i) => i.platform !== "github")
-              .map((conn) => (
-                <div
-                  key={conn.id}
-                  className={cn(
-                    "flex items-center justify-between rounded-lg border p-3",
-                    conn.status === "connected" ? "border-green-500/30 bg-green-500/5" : "border-border"
-                  )}
-                >
-                  <div className="flex items-center gap-2">
-                    <Globe className="h-4 w-4" />
-                    <p className="font-medium capitalize">{conn.platform}</p>
+              .map((conn) => {
+                const tone = statusTone(conn.status);
+                const connected = normalizeStatus(conn.status) === "connected";
+                return (
+                  <div
+                    key={conn.id}
+                    className={cn(
+                      "flex items-center justify-between rounded-lg border p-3",
+                      connected ? "border-green-500/30 bg-green-500/5" : "border-border"
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-4 w-4" />
+                      <p className="font-medium capitalize">{conn.platform}</p>
+                    </div>
+                    <Badge variant={tone}>{statusLabel(conn.status)}</Badge>
                   </div>
-                  <Badge variant={conn.status === "connected" ? "success" : "default"}>
-                    {conn.status}
-                  </Badge>
-                </div>
-              ))}
+                );
+              })}
 
             {integrations.length === 0 && !githubOAuthConnected && (
               <p className="text-sm text-muted">No authenticated integrations yet.</p>

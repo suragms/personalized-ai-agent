@@ -6,7 +6,7 @@ from datetime import date, timedelta
 import markdown as md
 from django.db.models import Sum
 
-from ai.services import generate_prose
+from ai.services import generate_prose_detailed
 from ai.types import AgentResult
 from core.utils import start_of_week
 
@@ -116,10 +116,11 @@ def generate_report(owner, period: str = "daily", persist: bool = True) -> Agent
     start, end = period_range(period)
     markdown, data = _build_markdown(owner, period, start, end)
 
-    content = generate_prose( 
+    content, provenance = generate_prose_detailed(
         system="You are a Chief of Staff writing an executive report. Use only the supplied data, keep it concise and professional.",
         user=markdown,
         fallback=markdown,
+        owner=owner,
     )
     html = md.markdown(content, extensions=["tables", "fenced_code"])
 
@@ -135,6 +136,7 @@ def generate_report(owner, period: str = "daily", persist: bool = True) -> Agent
                 "html": html,
                 "data": data,
                 "generated_by": "reports-agent",
+                "provenance": provenance,
             },
         )
     else:
@@ -145,5 +147,10 @@ def generate_report(owner, period: str = "daily", persist: bool = True) -> Agent
         status="ok",
         summary=f"{period} report ready",
         output=content,
-        data={"report_id": str(report.id) if report else None, "html": html, **data},
+        data={
+            "report_id": str(report.id) if report else None,
+            "html": html,
+            "provenance": provenance,
+            **data,
+        },
     )

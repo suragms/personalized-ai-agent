@@ -99,3 +99,5 @@ class IntegrationConnectionAdmin(admin.ModelAdmin):
     list_filter = ["platform", "status"]
     search_fields = ["owner__username", "connected_account"]
     readonly_fields = ["created_at", "updated_at"]
+    # Never expose decrypted OAuth tokens to the admin UI.
+    exclude = ("access_token", "refresh_token")

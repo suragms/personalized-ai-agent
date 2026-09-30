@@ -1,7 +1,7 @@
 """Resume services: auto-update from activity, ATS scoring, versioning."""
 import logging
 
-from ai.services import generate_prose
+from ai.services import generate_prose_detailed
 from ai.types import AgentResult
 
 from .models import ResumeVersion
@@ -93,12 +93,17 @@ def update_resume(owner) -> ResumeVersion:
     content = _render_markdown(data, ats)
 
     # Polished summary via LLM when available; otherwise the template.
-    polished = generate_prose( 
+    # skip_mock: the mock provider would digest the paragraph — keep the
+    # curated summary unless a real provider actually rewrites it.
+    polished, provenance = generate_prose_detailed(
         system="You are a resume writer. Improve this summary to be crisp and ATS-friendly. Return only the summary paragraph.",
         user=f"Summary: {data['summary']}",
         fallback=data["summary"],
+        owner=owner,
+        skip_mock=True,
     )
     data["summary"] = polished.strip() or data["summary"]
+    logger.info("Resume summary provenance: %s", provenance)
 
     latest = ResumeVersion.objects.filter(owner=owner).order_by("-version_number").first()
     version = ResumeVersion.objects.create(

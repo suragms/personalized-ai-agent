@@ -1,6 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { analytics, ai, github, learning, linkedin, notifications, portfolio, productivity, projects, providerConnections, reports, resume, skills } from "@/services";
+import { analytics, ai, github, learning, linkedin, notifications, portfolio, productivity, projects, providerConnections, reports, resume, skills, system } from "@/services";
 import type { ProviderConnectionFormData, Task } from "@/types";
+
+// ── System health ─────────────────────────────────────────────────────────
+export const useSystemHealth = () =>
+  useQuery({
+    queryKey: ["system-health"],
+    queryFn: system.health,
+    refetchInterval: 60_000,
+  });
 
 // ── Overview / analytics ──────────────────────────────────────────────────
 export const useOverview = () => useQuery({ queryKey: ["overview"], queryFn: analytics.overview });

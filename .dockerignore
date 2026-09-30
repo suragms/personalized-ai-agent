@@ -1,0 +1,13 @@
+# Keep secrets and local artifacts out of the backend image (context = repo root).
+.git
+.env
+**/.env
+backend/.venv
+venv/
+**/__pycache__
+**/*.pyc
+backend/.pytest_cache
+frontend/node_modules
+frontend/dist
+*.sqlite3
+*.log

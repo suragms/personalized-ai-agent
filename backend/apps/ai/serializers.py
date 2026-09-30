@@ -1,5 +1,7 @@
 from rest_framework import serializers
-from .models import ProviderDefinition, ProviderConnection
+
+from .models import ProviderConnection, ProviderDefinition
+
 
 class ProviderDefinitionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -28,20 +30,38 @@ class ProviderConnectionSerializer(serializers.ModelSerializer):
             "api_key_masked",
             "enabled",
             "is_default",
+            "status",
             "last_tested_at",
             "last_error_code",
+            "last_error_message",
+            "retryable",
             "latency_ms",
             "capabilities",
             "created_at",
             "updated_at",
         )
-        read_only_fields = ("id", "last_tested_at", "last_error_code", "latency_ms", "capabilities", "created_at", "updated_at")
+        read_only_fields = (
+            "id",
+            "status",
+            "last_tested_at",
+            "last_error_code",
+            "last_error_message",
+            "retryable",
+            "latency_ms",
+            "capabilities",
+            "created_at",
+            "updated_at",
+        )
 
     def get_api_key_masked(self, obj) -> str:
+        # Never return key material: short keys are fully masked, longer keys
+        # expose only the last 4 characters so users can recognise which key.
         if not obj.api_key:
             return ""
-        return f"{obj.api_key[:4]}...{obj.api_key[-4:]}" if len(obj.api_key) > 8 else "***"
-        
+        if len(obj.api_key) < 12:
+            return "***"
+        return f"••••{obj.api_key[-4:]}"
+
     def create(self, validated_data):
         validated_data['owner'] = self.context['request'].user
         return super().create(validated_data)

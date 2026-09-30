@@ -58,25 +58,11 @@ export default function Login() {
           </Button>
         </form>
 
-        <div className="mt-4 rounded-lg border border-border/50 bg-surface/50 p-3 text-xs text-muted">
-          <div className="flex items-center justify-between">
-            <span className="font-medium text-foreground">Credentials:</span>
-            <button
-              type="button"
-              onClick={() => {
-                setUsername("admin");
-                setPassword("GHOST CHANGE");
-              }}
-              className="text-[#6366f1] hover:underline font-medium"
-            >
-              Auto-fill
-            </button>
-          </div>
-          <div className="mt-1.5 flex justify-between text-[11px]">
-            <span>Username: <code className="rounded bg-background/80 px-1 py-0.5 text-foreground">admin</code></span>
-            <span>Password: <code className="rounded bg-background/80 px-1 py-0.5 text-foreground">GHOST CHANGE</code></span>
-          </div>
-        </div>
+        <p className="mt-4 rounded-lg border border-border/50 bg-surface/50 p-3 text-xs text-muted">
+          No account yet? Contact your administrator, or create one locally with{" "}
+          <code className="rounded bg-background/80 px-1 py-0.5 text-foreground">python manage.py createsuperuser</code>.
+          Seeded development credentials are documented in the README for local development only.
+        </p>
       </div>
     </div>
   );

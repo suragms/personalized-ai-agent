@@ -7,7 +7,7 @@ Docker host. Both build the same images.
 
 - `infra/Dockerfile.backend` — Python 3.14-slim, runs gunicorn on :8000.
 - `infra/Dockerfile.frontend` — multi-stage: Vite build → nginx serving the SPA
-  and proxying `/api` to the backend service.
+  and proxying `/api` and `/ws` (WebSocket) to the backend service.
 
 Local image build:
 
@@ -24,20 +24,33 @@ proxies `/api` to `http://backend:8000`.
 
 ## Render
 
-`infra/render.yaml` declares three services:
+`infra/render.yaml` declares five services:
 
-1. **Postgres** (render postgres with the `vector` extension enabled via a
-   start command or pre-created extension).
-2. **backend** web service — `gunicorn config.wsgi:application`. Env:
-   `SECRET_KEY`, `DATABASE_URL` (or the `POSTGRES_*` vars), `AI_PROVIDER`,
-   provider keys, `DJANGO_ALLOWED_HOSTS`.
-3. **worker** background service — `celery -A config worker` + beat.
-4. **frontend** static site → built with `npm ci && npm run build`, served by
-   nginx, with the `/api` proxy target set to the backend service URL via env.
+1. **Postgres** (`agent-postgres`).
+2. **Redis** (`agent-redis`) — broker, result backend, and channel layer.
+3. **backend** web service — `gunicorn config.wsgi:application` on :8000.
+   Env: `SECRET_KEY` (auto-generated), `ENCRYPTION_KEY` (**required — set a
+   Fernet key in the dashboard after import or the app refuses to boot**),
+   `POSTGRES_*` (from the database), `REDIS_URL` / `CELERY_RESULT_BACKEND`
+   (from the Redis service), `AI_PROVIDER`, `CORS_ALLOWED_ORIGINS`,
+   `DJANGO_ALLOWED_HOSTS`.
+4. **worker** background service — `celery -A config worker --beat`.
+5. **frontend** static site — `npm ci && npm run build`, published from
+   `dist`, talking to the backend cross-origin via `VITE_API_BASE`.
 
-Set environment variables in the Render dashboard (never commit secrets).
+Set `ENCRYPTION_KEY` in the Render dashboard (never commit secrets):
+
+```bash
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
 Run migrations on deploy: Render **Pre-Deploy** hook →
 `python manage.py migrate`.
+
+> WebSockets (`/ws/notifications/`): Render's static frontend cannot proxy
+> them — the SPA connects directly to the backend origin using
+> `VITE_API_BASE`. For the Docker path, nginx proxies both `/api/` and
+> `/ws/` (see `infra/nginx.conf`).
 
 ## CI/CD
 
@@ -52,8 +65,10 @@ pytest suite (which uses the real DB) runs in CI.
 ## Production checklist
 
 - Set a strong `SECRET_KEY`, `DEBUG=False`, and hardened `DJANGO_ALLOWED_HOSTS`.
-- Add a real AI provider (`AI_PROVIDER=openai|gemini|ollama`) for generated prose.
+- Set `ENCRYPTION_KEY` (Fernet) — required; protects stored provider credentials.
+- Set `CORS_ALLOWED_ORIGINS` to the exact frontend origin(s).
+- Add a real AI provider (`AI_PROVIDER=openai|gemini|ollama|groq`) for generated prose.
 - Enable OAuth (`ALLOW_OAUTH=True` + provider client ids) for passwordless login.
 - Point Celery at managed Redis; run a worker + beat instance.
 - Put the nginx frontend behind HTTPS (Render provides it; add a CDN otherwise).
-- Run `python manage.py createsuperuser` for admin access.
+- Run `python manage.py createsuperuser` (or `init_admin --password <pw>`) for admin access.

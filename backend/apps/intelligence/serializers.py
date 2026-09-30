@@ -260,6 +260,8 @@ class IntegrationConnectionSerializer(serializers.ModelSerializer):
             "scopes",
             "last_synced_at",
             "last_error",
+            "error_code",
+            "retryable",
             "expires_at",
             "created_at",
             "updated_at",

@@ -150,3 +150,24 @@ export const skills = {
     }),
   executions: () => api<{ count: number; results: SkillExecutionLog[] }>("/api/skills/executions/"),
 };
+
+// System health (anonymous-capable)
+export interface ServiceCheck {
+  status: string;
+  detail?: string;
+  retryable?: boolean;
+  [key: string]: unknown;
+}
+
+export interface SystemHealth {
+  status: "ok" | "degraded" | "error";
+  services: Record<string, ServiceCheck>;
+  integrations?: Record<
+    string,
+    { status: string; last_synced_at?: string | null; error_code?: string | null; retryable?: boolean }
+  >;
+}
+
+export const system = {
+  health: () => api<SystemHealth>("/api/health/"),
+};

@@ -8,8 +8,8 @@ import os
 import sys
 from datetime import timedelta
 from pathlib import Path
-from django.core.exceptions import ImproperlyConfigured
 
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 # ── Paths ─────────────────────────────────────────────────────────────────
@@ -37,7 +37,9 @@ def env_list(name: str, default: str = "") -> list[str]:
 
 # ── Core Django ───────────────────────────────────────────────────────────
 # Parse DEBUG first so the key guards below can reference it.
-DEBUG = env_bool("DEBUG", True)
+# NOTE: defaults to False so an unconfigured production deploy fails safe
+# (missing SECRET_KEY / ENCRYPTION_KEY raise) instead of running in debug mode.
+DEBUG = env_bool("DEBUG", False)
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,0.0.0.0")
 
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -217,43 +219,58 @@ CHANNEL_LAYERS = {
 }
 
 # ── Celery ────────────────────────────────────────────────────────────────
+from celery.schedules import crontab  # noqa: E402
+
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", REDIS_URL)
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/1")
 CELERY_TASK_ALWAYS_EAGER = env_bool("CELERY_TASK_ALWAYS_EAGER", False)
 CELERY_TASK_EAGER_PROPAGATES = True
 CELERY_TIMEZONE = "UTC"
+
+# Safe retry behaviour: bounded retries with jittered backoff — never infinite.
+CELERY_TASK_DEFAULT_RETRY_DELAY = 60
+CELERY_TASK_MAX_RETRIES = 3
+CELERY_TASK_RETRY_JITTER = True
+CELERY_TASK_COMPRESSION = "gzip"
+# Scheduled agents are idempotent (update_or_create), so ack late: work must
+# not be lost if a worker dies mid-task.
+CELERY_TASK_ACKS_LATE = True
+CELERY_TASK_REJECT_ON_WORKER_LOSS = True
+
+# NOTE: task names MUST match the registry key set by @shared_task(name=...).
+# A mismatched name means Celery rejects the job as unknown and the schedule
+# silently never runs (verified by tests/test_celery_schedule.py).
 CELERY_BEAT_SCHEDULE = {
     "morning-briefing": {
-        "task": "productivity.tasks.generate_morning_briefing",
-        "schedule": timedelta(hours=24),
-        "kwargs": {"hour": 6},
+        "task": "productivity.generate_morning_briefing",
+        "schedule": crontab(hour=6, minute=0),
     },
     "eod-wrap-up": {
-        "task": "productivity.tasks.generate_eod_wrap_up",
-        "schedule": timedelta(hours=24),
-        "kwargs": {"hour": 18},
+        "task": "productivity.generate_eod_wrap_up",
+        "schedule": crontab(hour=18, minute=0),
     },
     "daily-report": {
-        "task": "reports.tasks.generate_daily_report",
-        "schedule": timedelta(hours=24),
-        "kwargs": {"hour": 21},
+        "task": "reports.generate_daily_report",
+        "schedule": crontab(hour=21, minute=0),
     },
     "weekly-report": {
-        "task": "reports.tasks.generate_weekly_report",
-        "schedule": timedelta(days=7),
+        "task": "reports.generate_weekly_report",
+        "schedule": crontab(hour=7, minute=0, day_of_week=1),
     },
     "notification-sweep": {
-        "task": "notifications.tasks.notification_sweep",
-        "schedule": timedelta(hours=1),
+        "task": "notifications.notification_sweep",
+        "schedule": crontab(minute=0),  # hourly
     },
     "github-refresh": {
-        "task": "github.tasks.refresh_github_analytics",
-        "schedule": timedelta(hours=1),
+        "task": "github.refresh_github_analytics",
+        "schedule": crontab(minute=0),  # hourly
     },
 }
 
 # ── AI layer ──────────────────────────────────────────────────────────────
-AI_PROVIDER = os.getenv("AI_PROVIDER", "gemini")  # gemini | groq | grok | getunikey | opencode | openai | ollama | mock
+# Default is the deterministic offline mock so an unconfigured deployment is
+# never presented as a real external AI provider.
+AI_PROVIDER = os.getenv("AI_PROVIDER", "mock")  # gemini | groq | grok | getunikey | opencode | openai | ollama | mock
 AI_EMBEDDING_DIM = int(os.getenv("AI_EMBEDDING_DIM", "384"))
 AI_ENHANCE_PROSE = env_bool("AI_ENHANCE_PROSE", True)  # LLM prose when a real provider is set
 
@@ -329,9 +346,15 @@ import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
 
 if not DEBUG and os.getenv("SENTRY_DSN"):
+    try:
+        from sentry_sdk.integrations.celery import CeleryIntegration
+
+        _sentry_integrations = [DjangoIntegration(), CeleryIntegration()]
+    except ImportError:  # pragma: no cover - older sentry-sdk
+        _sentry_integrations = [DjangoIntegration()]
     sentry_sdk.init(
         dsn=os.getenv("SENTRY_DSN"),
-        integrations=[DjangoIntegration()],
+        integrations=_sentry_integrations,
         traces_sample_rate=0.1,
     )
 

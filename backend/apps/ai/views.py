@@ -1,13 +1,13 @@
 from rest_framework import status, viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.decorators import action
 
 from .command_router import route_command
-from .models import ProviderConnection, ProviderDefinition, UserSkillConfig, SkillExecutionLog
+from .models import ProviderConnection, ProviderDefinition, SkillExecutionLog, UserSkillConfig
 from .providers import available_providers
 from .serializers import ProviderConnectionSerializer, ProviderDefinitionSerializer
-from .skills import registry, SkillExecutor
+from .skills import SkillExecutor, registry
 
 
 class CommandView(APIView):
@@ -55,16 +55,30 @@ class ProviderConnectionViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"])
     def test(self, request, pk=None):
-        """Test connection for this specific provider configuration."""
+        """Test connection for this specific provider configuration.
+
+        Always returns 200 with ``{"status": "ok"|"error", ...}`` so the UI can
+        render provider diagnostics without treating a provider failure as an
+        API failure. ``code`` uses the AI_PROVIDER_* vocabulary.
+        """
         conn = self.get_object()
+        from core.connectivity import ai_error_code, normalize_exception, sanitize_error_message
+
+        from .exceptions import AIProviderError
         from .services import AIRoutingService
 
         svc = AIRoutingService(request.user)
         try:
             res = svc.test_connection(conn)
             return Response(res)
+        except AIProviderError as e:
+            return Response({"status": "error", "code": e.code, "detail": sanitize_error_message(e)}, status=200)
         except Exception as e:
-            return Response({"detail": str(e)}, status=400)
+            status, _retryable, code = normalize_exception(e)
+            return Response(
+                {"status": "error", "code": ai_error_code(status, code), "detail": sanitize_error_message(e)},
+                status=200,
+            )
 
 
 class SkillViewSet(viewsets.ViewSet):
@@ -131,7 +145,10 @@ class SkillViewSet(viewsets.ViewSet):
                 "started_at": log.started_at.isoformat() if log.started_at else None,
                 "completed_at": log.completed_at.isoformat() if log.completed_at else None,
                 "status": log.status,
-                "error_message": log.error_message,
+                "error_code": log.error_code,
+                "provider_id": log.provider_id,
+                "model": log.model,
+                "request_id": log.request_id,
                 "latency_ms": log.latency_ms,
             }
             for log in logs

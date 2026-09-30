@@ -4,11 +4,12 @@ Maps free-text commands to agent capabilities via the Skill Registry.
 Each intent maps to a declarative skill in skills/<skill-id>/. The router
 validates permissions and integrations before executing.
 """
-import re
 import logging
+import re
 
+from .skills import SkillExecutor, SkillRegistryError
+from .skills import registry as skill_registry
 from .types import CommandResult
-from .skills import registry as skill_registry, SkillExecutor, SkillRegistryError
 
 logger = logging.getLogger("ai")
 

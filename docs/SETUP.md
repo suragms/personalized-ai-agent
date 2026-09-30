@@ -34,7 +34,7 @@ python -m venv .venv
 pip install -r requirements.txt
 
 python manage.py migrate
-python manage.py seed_demo          # demo / demo12345, ~6 weeks of data
+python manage.py createsuperuser   # or: python manage.py init_admin --password <pw>
 python manage.py run_agents --all   # optional: warm every agent once
 python manage.py runserver 0.0.0.0:8000
 ```
@@ -49,7 +49,7 @@ npm install
 npm run dev       # http://localhost:5173  (Vite proxies /api → :8000)
 ```
 
-Sign in with **demo / demo12345**.
+Sign in with the superuser you created in step 3.
 
 ## 5. Scheduler (optional)
 
@@ -73,6 +73,9 @@ For pure development you can skip this — run agents manually with
 | Ollama | `AI_PROVIDER=ollama` + `OLLAMA_BASE_URL`, `OLLAMA_MODEL` |
 | OpenAI | `AI_PROVIDER=openai` + `OPENAI_API_KEY`, `OPENAI_MODEL` |
 | Gemini | `AI_PROVIDER=gemini` + `GEMINI_API_KEY`, `GEMINI_MODEL` |
+| Groq | `AI_PROVIDER=groq` (or `grok`) + `GROQ_API_KEY`, `GROQ_MODEL` |
+| GetUniKey | `AI_PROVIDER=getunikey` + `GETUNIKEY_API_KEY` |
+| OpenCode | `AI_PROVIDER=opencode` + `OPENCODE_API_KEY` |
 
 The platform degrades gracefully: if a provider is unset/unavailable it falls
 back to deterministic templated output.

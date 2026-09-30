@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDataSources, useIntegrations } from "@/hooks/useIntelligence";
 import type { DataSource, IntegrationConnection } from "@/services/intelligence";
+import { normalizeStatus } from "@/lib/status";
 import { cn } from "@/lib/utils";
 
 type HealthStatus =
@@ -23,26 +24,42 @@ type HealthStatus =
   | "no_data"
   | "unavailable";
 
+const ERROR_STATES = new Set(["api_error", "unknown_error"]);
+const ATTENTION_STATES = new Set([
+  "authentication_failed",
+  "invalid_credentials",
+  "permission_denied",
+  "rate_limited",
+  "timeout",
+  "network_error",
+  "service_unavailable",
+]);
+const DISCONNECTED_STATES = new Set(["disconnected", "not_configured"]);
+
 function getSourceHealth(source: DataSource): HealthStatus {
-  if (source.state === "error") return "error";
-  if (source.state === "disconnected") return "not_connected";
-  if (source.state === "unavailable") return "unavailable";
-  if (source.state === "stale") return "stale";
-  if (source.state === "syncing" || source.state === "connected") {
+  const state = normalizeStatus(source.state);
+  if (ERROR_STATES.has(state)) return "error";
+  if (DISCONNECTED_STATES.has(state)) return "not_connected";
+  if (state === "stale") return "stale";
+  if (state === "no_data") return "no_data";
+  if (state === "connecting" || state === "connected") {
     if (!source.last_synced_at) return "no_data";
     const ageHours =
       (Date.now() - new Date(source.last_synced_at).getTime()) / 3_600_000;
     if (ageHours > source.sync_frequency_hours * 2) return "stale";
     return "healthy";
   }
+  if (ATTENTION_STATES.has(state)) return "needs_attention";
   return "unavailable";
 }
 
 function getIntegrationHealth(conn: IntegrationConnection): HealthStatus {
-  if (conn.status === "error") return "error";
-  if (conn.status === "expired") return "needs_attention";
-  if (conn.status === "disconnected") return "not_connected";
-  if (conn.status === "connected") {
+  const status = normalizeStatus(conn.status);
+  if (ERROR_STATES.has(status)) return "error";
+  if (ATTENTION_STATES.has(status)) return "needs_attention";
+  if (DISCONNECTED_STATES.has(status)) return "not_connected";
+  if (status === "connecting") return "no_data";
+  if (status === "connected") {
     if (!conn.last_synced_at) return "no_data";
     return "healthy";
   }

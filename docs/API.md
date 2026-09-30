@@ -124,4 +124,24 @@ Base URL: `/api/`. All endpoints except auth/health require
 
 ## Health (`/api/health/`)
 
-`GET /api/health/` → `{"status": "ok", "database": "connected"}` (unauthenticated).
+`GET /api/health/` — unauthenticated, credential-free, safe to poll.
+
+```json
+{
+  "status": "ok",
+  "services": {
+    "database":  {"status": "connected"},
+    "redis":     {"status": "connected"},
+    "celery":    {"status": "running"},
+    "ai_provider": {"status": "configured", "mode": "mock"},
+    "github":    {"status": "configured"},
+    "google":    {"status": "not_configured"}
+  },
+  "integrations": { "github": {"status": "connected"}, "linkedin": {"status": "not_configured"} }
+}
+```
+
+- `status` is `ok` | `degraded` (top level) and lowercase snake_case per check.
+- `integrations` is included only for authenticated requests (per-user state).
+- Returns `503` only when the database itself is unreachable.
+- Probes never echo secrets or credentials.

@@ -40,7 +40,7 @@ npm run dev
 ```
 
 Visit: http://localhost:5173
-Login: **demo / demo12345**
+Login: the superuser from `python manage.py createsuperuser`
 
 ## 📋 Recommended Next Improvements
 

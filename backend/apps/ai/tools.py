@@ -1,6 +1,6 @@
-from typing import Callable, Dict
+from collections.abc import Callable
 
-TOOL_REGISTRY: Dict[str, Callable] = {}
+TOOL_REGISTRY: dict[str, Callable] = {}
 
 def register_tool(name: str):
     def decorator(fn):

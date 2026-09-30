@@ -1,13 +1,13 @@
 import logging
-from django.conf import settings
+
 from .providers.base import LLMProvider
-from .providers.openai_provider import OpenAIProvider
 from .providers.gemini_provider import GeminiProvider
-from .providers.ollama_provider import OllamaProvider
-from .providers.groq_provider import GroqProvider
 from .providers.getunikey_provider import GetUniKeyProvider
-from .providers.opencode_provider import OpenCodeProvider
+from .providers.groq_provider import GroqProvider
 from .providers.mock import MockProvider
+from .providers.ollama_provider import OllamaProvider
+from .providers.openai_provider import OpenAIProvider
+from .providers.opencode_provider import OpenCodeProvider
 
 logger = logging.getLogger("ai")
 

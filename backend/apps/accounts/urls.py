@@ -1,6 +1,6 @@
 from django.urls import path
-from .throttled_views import ThrottledTokenObtainPairView
 
+from .throttled_views import ThrottledTokenObtainPairView
 from .views import GitHubOAuthView, GoogleOAuthView, MeView, RegisterView
 
 urlpatterns = [
