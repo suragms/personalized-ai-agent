@@ -23,12 +23,13 @@ A production-ready **personal intelligence and productivity operating system** t
 | Feature | Description |
 |---|---|
 | **Data Connections** | GitHub, websites/portfolio, LinkedIn, Instagram, Facebook, Twitter/X — authorized integrations only |
-| **Intelligence Engine** | Analyzes connected data to identify patterns, opportunities, risks, and blockers |
+| **Intelligence Engine** | Connected data → snapshot → deterministic analyzers → AI interpretation → evidence-backed insight → priority → daily plan / alert / task / report |
+| **Provenance & Freshness** | Every insight and report carries its provenance (`REAL_CONNECTED_DATA`, `STALE_DATA`, `UNAVAILABLE_DATA`, `REAL_AI_PROVIDER`, `MOCK_PROVIDER`, …) and per-source freshness (`fresh`/`aging`/`stale`/`unavailable`) |
 | **Daily Workflow** | Morning brief, priority generation, task planning, evening review with evidence-based recommendations |
 | **Performance Insights** | Multi-dimensional analysis: development, portfolio, content, professional presence, project activity |
 | **Goals & Projects** | Connect goals → projects → tasks → daily workflow with transparent priority reasoning |
 | **Reports** | Daily/weekly/monthly reports with full source provenance and data freshness indicators |
-| **Alerts** | Critical notifications for deadlines, project risks, integration issues, and opportunities |
+| **Alerts** | Deduplicated critical notifications (24h cooldown, dismissed never re-raised) with severity and evidence |
 | **Skills System** | Extensible skill registry for specialized analysis tasks |
 | **Decision Support** | Structured decision framework with evidence, options, pros/cons, and AI recommendations |
 | **Privacy First** | You control what's connected, analyzed, and automated. Full data visibility and removal options |

@@ -94,6 +94,16 @@ class Insight(OwnedModel):
         ("improvement", "Improvement Suggestion"),
     ]
 
+    CATEGORY_CHOICES = [
+        ("development", "Development"),
+        ("portfolio", "Portfolio"),
+        ("professional_presence", "Professional Presence"),
+        ("project_health", "Project Health"),
+        ("productivity", "Productivity"),
+        ("goal", "Goal"),
+        ("system", "System"),
+    ]
+
     SEVERITY_CHOICES = [
         ("info", "Info"),
         ("low", "Low"),
@@ -103,9 +113,10 @@ class Insight(OwnedModel):
     ]
 
     CONFIDENCE_CHOICES = [
-        ("low", "Low"),
-        ("medium", "Medium"),
         ("high", "High"),
+        ("medium", "Medium"),
+        ("low", "Low"),
+        ("insufficient", "Insufficient Evidence"),
     ]
 
     STATUS_CHOICES = [
@@ -115,18 +126,64 @@ class Insight(OwnedModel):
         ("dismissed", "Dismissed"),
         ("converted_to_task", "Converted to Task"),
         ("completed", "Completed"),
+        ("expired", "Expired"),
+    ]
+
+    PRIORITY_CHOICES = [
+        ("low", "Low"),
+        ("medium", "Medium"),
+        ("high", "High"),
+        ("critical", "Critical"),
+    ]
+
+    # Provenance categories (intelligence.provenance.Provenance).
+    PROVENANCE_CHOICES = [
+        ("REAL_CONNECTED_DATA", "Real Connected Data"),
+        ("USER_PROVIDED_DATA", "User-Provided Data"),
+        ("USER_ENTERED_MANUAL_DATA", "User-Entered Manual Data"),
+        ("AI_DERIVED_ANALYSIS", "AI-Derived Analysis"),
+        ("AI_RECOMMENDATION", "AI Recommendation"),
+        ("DETERMINISTIC_ANALYSIS", "Deterministic Analysis"),
+        ("MOCK_DATA", "Mock Data"),
+        ("STALE_DATA", "Stale Data"),
+        ("UNAVAILABLE_DATA", "Unavailable Data"),
+        ("ERROR", "Error"),
+        ("INSUFFICIENT_EVIDENCE", "Insufficient Evidence"),
     ]
 
     insight_type = models.CharField(max_length=32, choices=TYPE_CHOICES, db_index=True)
+    category = models.CharField(max_length=32, choices=CATEGORY_CHOICES, default="development", db_index=True)
     severity = models.CharField(max_length=16, choices=SEVERITY_CHOICES, default="info", db_index=True)
     confidence = models.CharField(max_length=16, choices=CONFIDENCE_CHOICES, default="medium")
+    priority = models.CharField(max_length=16, choices=PRIORITY_CHOICES, default="medium", db_index=True)
 
     title = models.CharField(max_length=300)
+    summary = models.CharField(max_length=500, blank=True)
     description = models.TextField()
-    evidence = models.TextField()  # What data supports this
+    evidence = models.TextField()  # Human-readable rendering of structured_evidence
+
+    # Structured provenance (spec §3/§7)
+    provenance = models.CharField(max_length=32, choices=PROVENANCE_CHOICES, blank=True, default="", db_index=True)
+    source_type = models.CharField(max_length=32, blank=True, default="", db_index=True)
+    snapshot = models.ForeignKey(
+        "DataSnapshot", on_delete=models.SET_NULL, null=True, blank=True, related_name="insights"
+    )
+    structured_evidence = models.JSONField(default=list, blank=True)
+    observed_metrics = models.JSONField(default=dict, blank=True)
+
+    # Deterministic → AI interpretation (spec §6)
+    ai_interpretation = models.TextField(blank=True)
+    interpretation_meta = models.JSONField(default=dict, blank=True)
+
+    # Priority engine output (spec §12)
+    priority_reasoning = models.JSONField(default=list, blank=True)
 
     source_references = models.JSONField(default=list, blank=True)  # Links to data sources
     recommended_action = models.TextField(blank=True)
+
+    # Deduplication: engine-generated insights upsert on (owner, dedup_key).
+    dedup_key = models.CharField(max_length=200, blank=True, default="", db_index=True)
+    last_confirmed_at = models.DateTimeField(null=True, blank=True)
 
     status = models.CharField(max_length=32, choices=STATUS_CHOICES, default="new", db_index=True)
     expires_at = models.DateTimeField(null=True, blank=True)
@@ -139,6 +196,16 @@ class Insight(OwnedModel):
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["owner", "status", "-created_at"]),
+            models.Index(fields=["owner", "dedup_key"]),
+        ]
+        constraints = [
+            # Engine insights must be unique per owner+key so re-runs upsert
+            # instead of duplicating; legacy rows (empty key) are excluded.
+            models.UniqueConstraint(
+                fields=["owner", "dedup_key"],
+                name="unique_owner_insight_dedup",
+                condition=~models.Q(dedup_key=""),
+            ),
         ]
 
     def __str__(self):
@@ -188,6 +255,12 @@ class Alert(OwnedModel):
     source_type = models.CharField(max_length=64, blank=True)
     action_url = models.URLField(blank=True)
 
+    # Deduplication / cooldown (spec §15): one row per condition; repeats
+    # bump `occurrences` instead of spamming new alerts.
+    dedup_key = models.CharField(max_length=200, blank=True, default="", db_index=True)
+    last_fired_at = models.DateTimeField(null=True, blank=True)
+    occurrences = models.PositiveIntegerField(default=1)
+
     status = models.CharField(max_length=32, choices=STATUS_CHOICES, default="active", db_index=True)
     read_at = models.DateTimeField(null=True, blank=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
@@ -196,6 +269,7 @@ class Alert(OwnedModel):
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["owner", "status", "-created_at"]),
+            models.Index(fields=["owner", "dedup_key"]),
         ]
 
     def __str__(self):
@@ -320,6 +394,8 @@ class Report(OwnedModel):
     # Provenance
     data_sources = models.JSONField(default=list, blank=True)  # Which sources were used
     data_freshness = models.JSONField(default=dict, blank=True)  # Timestamp per source
+    provenance = models.CharField(max_length=32, blank=True, default="")
+    insufficient_data = models.BooleanField(default=False)
 
     # Findings
     metrics = models.JSONField(default=dict, blank=True)

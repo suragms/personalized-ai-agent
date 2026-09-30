@@ -15,22 +15,93 @@ export interface DataSource {
   updated_at: string;
 }
 
+/** Provenance categories produced by the backend intelligence pipeline (§3). */
+export type ProvenanceCategory =
+  | "REAL_CONNECTED_DATA"
+  | "USER_PROVIDED_DATA"
+  | "USER_ENTERED_MANUAL_DATA"
+  | "AI_DERIVED_ANALYSIS"
+  | "AI_RECOMMENDATION"
+  | "DETERMINISTIC_ANALYSIS"
+  | "MOCK_DATA"
+  | "STALE_DATA"
+  | "UNAVAILABLE_DATA"
+  | "ERROR"
+  | "INSUFFICIENT_EVIDENCE";
+
+/** One factor that contributed to the insight's priority score (§12). */
+export interface PriorityFactor {
+  name: string;
+  value: string | number | boolean;
+  points: number;
+  reason: string;
+}
+
+/** Availability record for the AI interpretation of a finding (§6). */
+export interface InterpretationMeta {
+  available: boolean;
+  provider?: string | null;
+  provenance?: string | null;
+  generated_at?: string;
+}
+
 export interface Insight {
   id: string;
   insight_type: "observation" | "trend" | "opportunity" | "risk" | "blocker" | "improvement";
+  category: string;
   severity: "info" | "low" | "medium" | "high" | "critical";
-  confidence: "low" | "medium" | "high";
+  confidence: "low" | "medium" | "high" | "insufficient";
+  priority: "low" | "medium" | "high" | "critical";
+  priority_reasoning: PriorityFactor[];
   title: string;
+  summary: string;
   description: string;
   evidence: string;
+  structured_evidence: Record<string, unknown>[];
+  observed_metrics: Record<string, unknown>;
+  provenance: ProvenanceCategory | "";
+  source_type: string;
+  snapshot: string | null;
+  ai_interpretation: string;
+  interpretation_meta: InterpretationMeta;
   source_references: Record<string, unknown>[];
   recommended_action: string;
-  status: "new" | "reviewed" | "accepted" | "dismissed" | "converted_to_task" | "completed";
+  dedup_key: string;
+  last_confirmed_at: string | null;
+  status:
+    | "new"
+    | "reviewed"
+    | "accepted"
+    | "dismissed"
+    | "converted_to_task"
+    | "completed"
+    | "expired";
   expires_at: string | null;
   helpful: boolean | null;
   user_notes: string;
   created_at: string;
   updated_at: string;
+}
+
+/** Aggregated counts from GET /api/intelligence/summary/ (§23). */
+export interface IntelligenceSummary {
+  insights: {
+    total: number;
+    new: number;
+    reviewed: number;
+    expired: number;
+    critical: number;
+    high: number;
+  };
+  alerts: { total: number; active: number };
+  tasks: { open: number; done_today: number };
+  goals: { active: number; overdue: number };
+  data: {
+    sources: { type: string; name: string; state: string; freshness: string; message?: string }[];
+    integrations: { platform: string; status: string }[];
+    overall_status: string;
+  };
+  generated_at: string;
 }
 
 export interface Alert {
@@ -154,6 +225,20 @@ export const intelligence = {
     }),
   dismissInsight: (id: string) =>
     api<{ status: string }>(`/api/intelligence/insights/${id}/dismiss/`, { method: "POST" }),
+  convertInsightToTask: (id: string) =>
+    api<{ status: string; task: { id: string; title: string; source_insight: string; provenance: string } }>(
+      `/api/intelligence/insights/${id}/convert_to_task/`,
+      { method: "POST" },
+    ),
+  /** Run the deterministic insight engine for the current user (idempotent). */
+  runEngine: () =>
+    api<{ created: number; updated: number; expired: number; tasks_created: number; alerts_created: number }>(
+      "/api/intelligence/insights/generate/",
+      { method: "POST" },
+    ),
+
+  // Engine summary (dashboard counts + data health in one call)
+  summary: () => api<IntelligenceSummary>("/api/intelligence/summary/"),
 
   // Alerts
   alerts: (params?: { status?: string }) => {
@@ -168,6 +253,18 @@ export const intelligence = {
 
   // Daily Plan
   dailyPlan: () => api<DailyPlan>("/api/intelligence/daily-plans/today/"),
+  generatePlan: (date?: string) =>
+    api<DailyPlan>("/api/intelligence/daily-plans/generate/", {
+      method: "POST",
+      body: JSON.stringify(date ? { date } : {}),
+    }),
+
+  // Reports (insufficient data returns 400 with insufficient_data: true)
+  generateReport: (data: { report_type?: string; period_start?: string; period_end?: string }) =>
+    api<{ insufficient_data: boolean; report: unknown; message: string }>(
+      "/api/intelligence/reports/generate/",
+      { method: "POST", body: JSON.stringify(data) },
+    ),
 
   // Integrations
   integrations: () => api<{ results: IntegrationConnection[] }>("/api/intelligence/integrations/"),

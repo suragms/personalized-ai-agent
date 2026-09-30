@@ -70,6 +70,26 @@ export function useInsights(params?: { status?: string; type?: string }) {
   });
 }
 
+/** Aggregated engine counts + data health from GET /api/intelligence/summary/. */
+export function useIntelligenceSummary() {
+  return useQuery({
+    queryKey: ["intelligence", "summary"],
+    queryFn: intelligence.summary,
+  });
+}
+
+export function useConvertInsightToTask() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => intelligence.convertInsightToTask(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["intelligence"] });
+      queryClient.invalidateQueries({ queryKey: ["productivity"] });
+    },
+  });
+}
+
 export function useMarkInsightHelpful() {
   const queryClient = useQueryClient();
 

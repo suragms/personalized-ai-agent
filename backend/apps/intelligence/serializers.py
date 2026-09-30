@@ -59,13 +59,26 @@ class InsightSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "insight_type",
+            "category",
             "severity",
             "confidence",
+            "priority",
+            "priority_reasoning",
             "title",
+            "summary",
             "description",
             "evidence",
+            "structured_evidence",
+            "observed_metrics",
+            "provenance",
+            "source_type",
+            "snapshot",
+            "ai_interpretation",
+            "interpretation_meta",
             "source_references",
             "recommended_action",
+            "dedup_key",
+            "last_confirmed_at",
             "status",
             "expires_at",
             "helpful",
@@ -73,7 +86,23 @@ class InsightSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = [
+            "id",
+            "category",
+            "priority",
+            "priority_reasoning",
+            "structured_evidence",
+            "observed_metrics",
+            "provenance",
+            "source_type",
+            "snapshot",
+            "ai_interpretation",
+            "interpretation_meta",
+            "dedup_key",
+            "last_confirmed_at",
+            "created_at",
+            "updated_at",
+        ]
 
 
 class AlertSerializer(serializers.ModelSerializer):
@@ -88,13 +117,16 @@ class AlertSerializer(serializers.ModelSerializer):
             "evidence",
             "source_type",
             "action_url",
+            "dedup_key",
+            "occurrences",
+            "last_fired_at",
             "status",
             "read_at",
             "resolved_at",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = ["id", "dedup_key", "occurrences", "last_fired_at", "created_at", "updated_at"]
 
 
 class GoalSerializer(serializers.ModelSerializer):
@@ -161,6 +193,8 @@ class ReportSerializer(serializers.ModelSerializer):
             "summary",
             "data_sources",
             "data_freshness",
+            "provenance",
+            "insufficient_data",
             "metrics",
             "findings",
             "recommendations",
@@ -169,7 +203,21 @@ class ReportSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = [
+            "id",
+            "summary",
+            "data_sources",
+            "data_freshness",
+            "provenance",
+            "insufficient_data",
+            "metrics",
+            "findings",
+            "recommendations",
+            "confidence",
+            "limitations",
+            "created_at",
+            "updated_at",
+        ]
 
 
 class PerformanceMetricSerializer(serializers.ModelSerializer):

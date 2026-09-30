@@ -65,11 +65,17 @@ def generate_prose(
     )[0]
 
 
-def embed_text(text: str, owner) -> list[float]:
-    """Embed text for the memory store. Falls back to a zero-vector on failure."""
+def embed_text_detailed(text: str, owner) -> tuple[list[float], str | None]:
+    """Embed text and report which provider produced it (or None on failure)."""
     svc = AIRoutingService(owner)
     try:
-        return svc.embed(text)
+        vector = svc.embed(text)
     except Exception as exc:
         logger.warning("Embedding failed (%s); returning empty vector.", exc)
-        return []
+        return [], None
+    return vector or [], svc.last_provenance
+
+
+def embed_text(text: str, owner) -> list[float]:
+    """Embed text for the memory store. Falls back to an empty vector on failure."""
+    return embed_text_detailed(text, owner)[0]

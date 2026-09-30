@@ -20,9 +20,19 @@ class TaskSerializer(serializers.ModelSerializer):
             "completed_at",
             "project",
             "project_name",
+            "source_insight",
+            "provenance",
+            "evidence",
             "created_at",
         )
-        read_only_fields = ("id", "completed_at", "created_at")
+        read_only_fields = (
+            "id",
+            "completed_at",
+            "created_at",
+            "source_insight",
+            "provenance",
+            "evidence",
+        )
 
     def update(self, instance, validated_data):
         if validated_data.get("status") == "done" and instance.status != "done":

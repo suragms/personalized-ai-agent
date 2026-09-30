@@ -34,15 +34,27 @@ class MemoryViewSet(viewsets.ModelViewSet):
 
 
 class MemorySearchView(APIView):
-    """GET ?query=...&k=8 → top-k semantically similar memories."""
+    """GET ?query=...&k=8 → {mode, message, results}.
+
+    `mode` reports how the ranking was produced (semantic | keyword | recent);
+    fallbacks are disclosed instead of passing silently for semantic results.
+    """
 
     def get(self, request):
         params = SearchSerializer(data=request.query_params)
         params.is_valid(raise_exception=True)
         query = params.validated_data.get("query", "")
         k = params.validated_data.get("k", 8)
-        results = search_memory(request.user, query, k=k) if query else []
-        return Response(MemoryEntrySerializer(results, many=True).data)
+        result = search_memory(request.user, query, k=k) if query else None
+        if result is None:
+            return Response({"mode": "none", "message": "No query provided.", "results": []})
+        return Response(
+            {
+                "mode": result.mode,
+                "message": result.message,
+                "results": MemoryEntrySerializer(result.entries, many=True).data,
+            }
+        )
 
 
 class ConversationsView(APIView):

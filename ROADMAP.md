@@ -2,6 +2,13 @@
 
 This document outlines the remaining implementation work to complete the transformation from a demo AI agent into a production Personal AI Operating System.
 
+> **Status (2026-09-30):** Phase 1 foundation, Phase 2 GitHub integration + data
+> synchronization, and Phase 3 Intelligence Generation (Connected Data →
+> Snapshot → Analyzers → AI Interpretation → Insight → Priority → Daily
+> Plan/Alert/Task/Report) are implemented. Backend: 122 tests, ruff clean.
+> Frontend: 24 tests, lint/build clean. Still open below: website analysis,
+> performance analysis deepening, Phase 5 skills/automation, Phase 6 polish.
+
 ---
 
 ## Phase 2: Core Integrations (Weeks 1-3)
@@ -11,15 +18,15 @@ This document outlines the remaining implementation work to complete the transfo
 **Estimated Time:** 1 week
 
 **Tasks:**
-- [ ] Implement GitHub OAuth flow
-- [ ] Create GitHub sync service
-- [ ] Build repository analyzer
-- [ ] Implement commit pattern analysis
-- [ ] Add PR/Issue tracking
-- [ ] Create repository health scoring
-- [ ] Generate GitHub insights with evidence
+- [x] Implement GitHub OAuth flow (code-exchange, `ALLOW_OAUTH`-gated)
+- [x] Create GitHub sync service (`GitHubSyncService`, `POST data-sources/<id>/sync/`)
+- [x] Build repository analyzer
+- [x] Implement commit pattern analysis
+- [x] Add PR/Issue tracking
+- [x] Create repository health scoring
+- [x] Generate GitHub insights with evidence
 - [ ] Add GitHub skill for on-demand analysis
-- [ ] Write tests for GitHub integration
+- [x] Write tests for GitHub integration
 
 **Success Criteria:**
 - User can connect GitHub account via OAuth
@@ -53,14 +60,14 @@ This document outlines the remaining implementation work to complete the transfo
 **Estimated Time:** 1 week
 
 **Tasks:**
-- [ ] Implement Celery scheduled tasks
+- [x] Implement Celery scheduled tasks
 - [ ] Create sync coordinator service
-- [ ] Add staleness detection
-- [ ] Implement sync retry logic
-- [ ] Add sync status tracking
-- [ ] Create data health monitoring
-- [ ] Implement sync error handling
-- [ ] Write tests for sync system
+- [x] Add staleness detection (per-source freshness thresholds)
+- [x] Implement sync retry logic (autoretry + backoff; retryable classification)
+- [x] Add sync status tracking
+- [x] Create data health monitoring
+- [x] Implement sync error handling
+- [x] Write tests for sync system
 
 ---
 
@@ -71,14 +78,14 @@ This document outlines the remaining implementation work to complete the transfo
 **Estimated Time:** 1 week
 
 **Tasks:**
-- [ ] Build morning briefing generator
-- [ ] Implement priority calculation engine
-- [ ] Create blocker detection
-- [ ] Add deadline monitoring
-- [ ] Build evening review generator
-- [ ] Implement tomorrow's planning
+- [x] Build morning briefing generator (`intelligence/daily.py::generate_morning_plan`)
+- [x] Implement priority calculation engine (`intelligence/priority.py`)
+- [x] Create blocker detection (integration, goal overdue, stale-signal blockers)
+- [x] Add deadline monitoring (upcoming deadlines + overdue-goal blockers)
+- [x] Build evening review generator (`generate_evening_review`)
+- [x] Implement tomorrow's planning (`tomorrow_priorities`)
 - [ ] Add daily-intelligence skill
-- [ ] Write tests for daily intelligence
+- [x] Write tests for daily intelligence
 
 ### Performance Analysis
 **Priority:** High  
@@ -99,14 +106,14 @@ This document outlines the remaining implementation work to complete the transfo
 **Estimated Time:** 1 week
 
 **Tasks:**
-- [ ] Build pattern detection algorithms
-- [ ] Implement opportunity identification
-- [ ] Create risk detection
-- [ ] Add blocker identification
-- [ ] Build improvement suggestion engine
-- [ ] Implement confidence calculation
-- [ ] Add insight deduplication
-- [ ] Write tests for insight generation
+- [x] Build pattern detection algorithms (GitHub activity/health/PR/issue/release analyzers)
+- [x] Implement opportunity identification
+- [x] Create risk detection
+- [x] Add blocker identification
+- [x] Build improvement suggestion engine (`recommended_action` on every insight)
+- [x] Implement confidence calculation (high/medium/low/insufficient)
+- [x] Add insight deduplication (`(owner, dedup_key)` unique upsert)
+- [x] Write tests for insight generation
 
 ---
 

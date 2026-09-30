@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { TrendingUp, Filter, X, ThumbsUp, ThumbsDown, AlertCircle } from "lucide-react";
+import { TrendingUp, Filter, X, ThumbsUp, ThumbsDown, AlertCircle, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useInsights, useMarkInsightHelpful, useDismissInsight } from "@/hooks/useIntelligence";
+import { ProvenanceBadge } from "@/components/ProvenanceBadge";
+import { useInsights, useMarkInsightHelpful, useDismissInsight, useConvertInsightToTask } from "@/hooks/useIntelligence";
 import type { Insight } from "@/services/intelligence";
 import { cn } from "@/lib/utils";
 
@@ -72,7 +74,7 @@ export default function Insights() {
         <Filter className="h-4 w-4 text-muted" />
 
         <div className="flex gap-1">
-          {["active", "new", "reviewed", "dismissed"].map((s) => (
+          {["active", "new", "reviewed", "expired", "dismissed"].map((s) => (
             <button
               key={s}
               onClick={() => setFilterStatus(s === filterStatus ? "" : s)}
@@ -224,7 +226,7 @@ function InsightCard({
     <Card
       className={cn(
         "cursor-pointer transition-shadow hover:shadow-md",
-        insight.status === "dismissed" && "opacity-60"
+        (insight.status === "dismissed" || insight.status === "expired") && "opacity-60"
       )}
       onClick={onSelect}
     >
@@ -238,6 +240,7 @@ function InsightCard({
             <Badge variant={insight.confidence === "high" ? "success" : "info"} className="text-[10px]">
               {insight.confidence} confidence
             </Badge>
+            <ProvenanceBadge provenance={insight.provenance} />
           </div>
           <CardTitle className="text-sm leading-snug">{insight.title}</CardTitle>
         </div>
@@ -257,6 +260,7 @@ function InsightCard({
           <p className="text-[10px] text-muted">
             {new Date(insight.created_at).toLocaleDateString()}
             {insight.source_references.length > 0 && " · has evidence"}
+            {insight.last_confirmed_at && ` · confirmed ${new Date(insight.last_confirmed_at).toLocaleDateString()}`}
           </p>
           <div
             className="flex items-center gap-1"
@@ -302,6 +306,14 @@ function InsightCard({
 }
 
 function InsightDetail({ insight, onClose }: { insight: Insight; onClose: () => void }) {
+  const interpretationMeta = insight.interpretation_meta;
+  const hasInterpretation = Boolean(insight.ai_interpretation) && interpretationMeta?.available === true;
+  const interpretationAttempted = Boolean(interpretationMeta?.generated_at);
+  const convert = useConvertInsightToTask();
+  const canConvert =
+    Boolean(insight.recommended_action) &&
+    !["dismissed", "completed", "converted_to_task"].includes(insight.status);
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-2xl rounded-xl border border-border bg-background shadow-xl overflow-y-auto max-h-[90vh]">
@@ -310,6 +322,7 @@ function InsightDetail({ insight, onClose }: { insight: Insight; onClose: () => 
             <div className="flex flex-wrap gap-1.5 mb-2">
               <Badge variant={SEVERITY_VARIANT[insight.severity] ?? "default"}>{insight.severity}</Badge>
               <Badge variant="default">{TYPE_LABELS[insight.insight_type] ?? insight.insight_type}</Badge>
+              <ProvenanceBadge provenance={insight.provenance} />
             </div>
             <h2 className="text-base font-semibold leading-snug">{insight.title}</h2>
           </div>
@@ -320,7 +333,44 @@ function InsightDetail({ insight, onClose }: { insight: Insight; onClose: () => 
 
         <div className="space-y-4 p-5">
           <Section title="Summary">
-            <p className="text-sm text-muted">{insight.description}</p>
+            <p className="text-sm text-muted">{insight.summary || insight.description}</p>
+          </Section>
+
+          <Section title="AI Interpretation">
+            {hasInterpretation ? (
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-primary" />
+                  <ProvenanceBadge provenance={interpretationMeta?.provenance ?? "REAL_AI_PROVIDER"} />
+                </div>
+                <p className="text-sm text-muted">{insight.ai_interpretation}</p>
+              </div>
+            ) : interpretationAttempted ? (
+              <p className="text-xs text-muted">
+                AI interpretation unavailable ({interpretationMeta?.provenance ?? "provider unavailable"}).
+                The deterministic evidence below stands on its own — nothing was generated to fill this space.
+              </p>
+            ) : (
+              <p className="text-xs text-muted">Not interpreted yet — interpretation runs with the next engine pass.</p>
+            )}
+          </Section>
+
+          <Section title="Priority">
+            <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+              <Badge variant={SEVERITY_VARIANT[insight.priority] ?? "default"}>{insight.priority} priority</Badge>
+            </div>
+            {insight.priority_reasoning?.length > 0 ? (
+              <ul className="space-y-1">
+                {insight.priority_reasoning.map((factor) => (
+                  <li key={factor.name} className="text-xs text-muted">
+                    <strong className="text-foreground">{factor.name}</strong> ({factor.points > 0 ? "+" : ""}
+                    {factor.points}): {factor.reason}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-xs text-muted">No priority factors recorded.</p>
+            )}
           </Section>
 
           {insight.evidence && (
@@ -331,11 +381,43 @@ function InsightDetail({ insight, onClose }: { insight: Insight; onClose: () => 
             </Section>
           )}
 
+          {insight.structured_evidence?.length > 0 && (
+            <Section title="Structured Evidence">
+              <ul className="space-y-1">
+                {insight.structured_evidence.map((entry, idx) => (
+                  <li key={idx} className="text-xs text-muted">
+                    {Object.entries(entry)
+                      .map(([k, v]) => `${k}: ${String(v)}`)
+                      .join(" · ")}
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          )}
+
           {insight.recommended_action && (
             <Section title="Recommendation">
               <p className="text-sm text-muted">{insight.recommended_action}</p>
             </Section>
           )}
+
+          <Section title="Provenance">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <ProvenanceBadge provenance={insight.provenance} />
+              {insight.source_type && <Badge variant="default">{insight.source_type}</Badge>}
+              {insight.snapshot && <Badge variant="info">snapshot linked</Badge>}
+            </div>
+            {(insight.provenance === "STALE_DATA" || insight.provenance === "UNAVAILABLE_DATA") && (
+              <p className="mt-1.5 text-xs text-muted">
+                This finding was computed from data that is not currently fresh — treat values as indicative.
+              </p>
+            )}
+            {insight.last_confirmed_at && (
+              <p className="mt-1.5 text-[11px] text-muted">
+                Last confirmed by the engine: {new Date(insight.last_confirmed_at).toLocaleString()}
+              </p>
+            )}
+          </Section>
 
           {insight.source_references.length > 0 && (
             <Section title="Source References">
@@ -355,6 +437,20 @@ function InsightDetail({ insight, onClose }: { insight: Insight; onClose: () => 
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
+            {canConvert && (
+              <Button
+                size="sm"
+                disabled={convert.isPending}
+                onClick={() =>
+                  convert.mutate(insight.id, {
+                    onSuccess: () => toast.success("Recommendation converted to task"),
+                    onError: (err) => toast.error(err instanceof Error ? err.message : "Conversion failed"),
+                  })
+                }
+              >
+                {convert.isPending ? "Converting…" : "Convert to task"}
+              </Button>
+            )}
             <Button variant="ghost" size="sm" onClick={onClose}>Close</Button>
           </div>
         </div>

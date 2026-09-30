@@ -44,6 +44,49 @@ for every number on the dashboard. The **AI layer enhances prose** (insights,
 briefings, reports) and is never the only path between users and their data:
 every `generate_prose()` call falls back to a template built from real metrics.
 
+## Intelligence Engine (`apps/intelligence`)
+
+The Phase 3 pipeline turns authorized connected data into decisions — with every
+step evidence-linked and provenance-tagged:
+
+```
+Connected data ──► DataSnapshot (content-hashed, per-source)
+      │
+      ▼
+Deterministic analyzers (github/analyzers.py — activity, repo health,
+      │                 PRs, issues, releases; NO_DATA rule: a missing
+      │                 source is UNAVAILABLE_DATA, never a zero finding)
+      ▼
+AnalysisFinding ──► priority scoring ──► Insight upsert (owner + dedup_key)
+      │                  severity base + confidence + freshness +           │
+      │                  deadline + goal relevance                         │
+      ▼                                                                    ▼
+AI interpretation (facts-only prompt; stored ONLY when             Recommendation ──► Task
+      │            provenance is REAL_AI_PROVIDER — mock never                 │  (Task.dedup_key =
+      │            fakes an interpretation)                                    │   insight:<dedup_key>)
+      ▼
+DailyPlan (morning brief / evening review) · Alert (dedup + cooldown) · Report
+```
+
+Key guarantees:
+
+- **Provenance** (`intelligence/provenance.py`): every insight/report/task stores
+  where its data came from — `REAL_CONNECTED_DATA`, `STALE_DATA`,
+  `UNAVAILABLE_DATA`, `REAL_AI_PROVIDER`, `MOCK_PROVIDER`, …
+- **Freshness** (`FRESHNESS_THRESHOLDS`): per-source-type thresholds (github
+  24h/72h, website/linkedin/social 7d/14d, manual 30d/90d, default 24h/72h;
+  `sync_frequency_hours` wins when set) → `fresh`/`aging`/`stale`/`unavailable`.
+- **Confidence**: `high`/`medium`/`low`/`insufficient` derived from evidence
+  count, freshness and connectivity.
+- **Idempotency**: insights upsert on `(owner, dedup_key)`; tasks dedup via
+  `Task.dedup_key` with a 14-day done cooldown; alerts bump `occurrences`
+  inside a 24h cooldown and never re-raise dismissed rows.
+- **Expiry**: a successful scope run immediately expires engine insights that
+  were not reconfirmed; analyzer failures skip that scope's expiry.
+- **No fabrication**: reports return `400 insufficient_data` (and persist
+  nothing) instead of writing a zero-metric report; `InsightEngine.run()` skips
+  the github scope entirely when no repositories exist.
+
 ## AI layer (`apps/ai`)
 
 - `providers/` — `LLMProvider` ABC with four backends:
@@ -67,13 +110,23 @@ every `generate_prose()` call falls back to a template built from real metrics.
 
 ## Scheduling
 
-Celery beat (see `config/celery.py`) drives the platform when a worker runs:
+Celery beat (see `config/settings.py::CELERY_BEAT_SCHEDULE`; names are asserted
+by `tests/test_celery_schedule.py`) drives the platform when a worker runs:
 
-| Schedule | Task |
-|---|---|
-| hourly | GitHub analytics refresh · notification sweep |
-| 24h | morning briefing, EOD wrap-up, daily report |
-| 7d | weekly report |
+| Entry | Task | When |
+|---|---|---|
+| morning-briefing | `productivity.generate_morning_briefing` | 06:00 |
+| eod-wrap-up | `productivity.generate_eod_wrap_up` | 18:00 |
+| daily-report | `reports.generate_daily_report` | 21:00 |
+| weekly-report | `reports.generate_weekly_report` | Mon 07:00 |
+| notification-sweep | `notifications.notification_sweep` | hourly |
+| github-refresh | `github.refresh_github_analytics` | hourly |
+| intelligence-freshness | `intelligence.check_freshness` | every 6h (:17) |
+| intelligence-morning | `intelligence.daily_intelligence` | 05:30 |
+| intelligence-evening | `intelligence.evening_review` | 22:00 |
+
+The three `intelligence.*` tasks run the engine per user with per-user failure
+isolation, so one failing account never blocks the sweep.
 
 On-demand (no worker needed): `python manage.py run_agents --all` runs every
 agent synchronously. Set `CELERY_TASK_ALWAYS_EAGER=True` for inline execution.

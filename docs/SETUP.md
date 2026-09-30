@@ -53,8 +53,8 @@ Sign in with the superuser you created in step 3.
 
 ## 5. Scheduler (optional)
 
-With a Redis backend running, start a Celery worker + beat to automate briefings
-and reports:
+With a Redis backend running, start a Celery worker + beat to automate briefings,
+reports, and the Intelligence Engine:
 
 ```bash
 cd backend
@@ -62,8 +62,14 @@ cd backend
 .venv/Scripts/python -m celery -A config beat -l info
 ```
 
+Beat also runs the Phase 3 intelligence jobs (see
+`CELERY_BEAT_SCHEDULE` in `config/settings.py`): `intelligence.check_freshness`
+every 6 hours, `intelligence.daily_intelligence` at 05:30, and
+`intelligence.evening_review` at 22:00.
+
 For pure development you can skip this — run agents manually with
-`python manage.py run_agents github reports`.
+`python manage.py run_agents github reports`, or POST
+`/api/intelligence/insights/generate/` to run the engine on demand.
 
 ## Switching AI providers
 

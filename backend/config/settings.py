@@ -265,6 +265,19 @@ CELERY_BEAT_SCHEDULE = {
         "task": "github.refresh_github_analytics",
         "schedule": crontab(minute=0),  # hourly
     },
+    # Insight Engine (Phase 3): freshness sweep, morning intelligence, evening review.
+    "intelligence-freshness": {
+        "task": "intelligence.check_freshness",
+        "schedule": crontab(minute=17, hour="*/6"),
+    },
+    "intelligence-morning": {
+        "task": "intelligence.daily_intelligence",
+        "schedule": crontab(hour=5, minute=30),
+    },
+    "intelligence-evening": {
+        "task": "intelligence.evening_review",
+        "schedule": crontab(hour=22, minute=0),
+    },
 }
 
 # ── AI layer ──────────────────────────────────────────────────────────────

@@ -47,6 +47,32 @@ Base URL: `/api/`. All endpoints except auth/health require
 | GET | `burndown/overview/` | Burndown series for all projects |
 | CRUD | `milestones/` | Milestones |
 
+## Intelligence (`/api/intelligence/`)
+
+| Method | Path | Description |
+|---|---|---|
+| CRUD | `data-sources/` | Connected data sources (state, freshness, sync cadence) |
+| POST | `data-sources/<id>/sync/` | Dispatch a real sync (`400 sync_unsupported` / `400 not_connected` / `502 sync_failed`) |
+| GET | `data-snapshots/` | Point-in-time captures (content-hashed) |
+| CRUD | `insights/` | Evidence-backed insights (`?status=new`, excludes dismissed/completed/expired) |
+| POST | `insights/generate/` | Run the Intelligence Engine now; returns `created/updated/expired/tasks_created/alerts_created/interpreted/…` |
+| POST | `insights/<id>/convert_to_task/` | Explicitly convert a recommendation into a `Task` (dedup-keyed) |
+| POST | `insights/<id>/mark_helpful/` · `dismiss/` | Feedback / dismiss |
+| CRUD | `alerts/` | Alerts (dedup + 24h cooldown; dismissed never re-raised) |
+| POST | `alerts/<id>/mark_read/` · `resolve/` | Alert lifecycle |
+| CRUD | `goals/` · `decisions/` | Goals and decision framework |
+| GET/POST | `reports/`, `reports/generate/` | `generate` returns `400 insufficient_data` instead of fabricating a report |
+| GET | `performance/` | Performance metrics (only recorded when data exists) |
+| GET | `daily-plans/today/` · POST `daily-plans/generate/` | Morning brief / evening review (deterministic, idempotent per day) |
+| GET/PUT | `profile/me/` | Onboarding profile |
+| CRUD | `integrations/` · POST `integrations/<id>/disconnect/` | OAuth connections |
+| GET | `summary/` | Engine counts (insights by severity/status, active alerts) + per-source freshness + data health |
+| GET | `data-health/` | Per-source freshness in the `fresh`/`aging`/`stale`/`unavailable` vocabulary |
+
+Provenance values on insights/reports/tasks: `REAL_CONNECTED_DATA`, `USER_PROVIDED_DATA`,
+`AI_DERIVED_ANALYSIS`, `STALE_DATA`, `UNAVAILABLE_DATA`, `ERROR`, plus AI prose provenance
+`REAL_AI_PROVIDER` / `MOCK_PROVIDER` / `DETERMINISTIC_TEMPLATE`. `confidence` may be `insufficient`.
+
 ## Reports (`/api/reports/`)
 
 | Method | Path | Description |
@@ -118,7 +144,7 @@ Base URL: `/api/`. All endpoints except auth/health require
 | Method | Path | Description |
 |---|---|---|
 | CRUD | `memory/` | Memory entries (with embeddings) |
-| GET | `search/?query=&k=` | Semantic (pgvector) search |
+| GET | `search/?query=&k=` | Search with `mode`/`message`: `semantic` only when pgvector + a real embedding provider are available, otherwise an honest keyword/recent fallback |
 | GET/POST | `conversations/` | Conversation log |
 | GET/PUT | `preferences/` | User preferences |
 

@@ -13,6 +13,7 @@ from .views import (
     GoalViewSet,
     InsightViewSet,
     IntegrationConnectionViewSet,
+    IntelligenceSummaryView,
     PerformanceMetricViewSet,
     ReportViewSet,
     UserProfileViewSet,
@@ -33,5 +34,6 @@ router.register(r"integrations", IntegrationConnectionViewSet, basename="integra
 
 urlpatterns = [
     path("data-health/", DataHealthView.as_view(), name="data-health"),
+    path("summary/", IntelligenceSummaryView.as_view(), name="intelligence-summary"),
     path("", include(router.urls)),
 ]

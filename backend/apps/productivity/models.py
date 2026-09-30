@@ -29,6 +29,17 @@ class Task(OwnedModel):
         "projects.Project", on_delete=models.SET_NULL, null=True, blank=True, related_name="tasks"
     )
 
+    # Provenance when a task was generated from an insight (spec §14).
+    source_insight = models.ForeignKey(
+        "intelligence.Insight", on_delete=models.SET_NULL, null=True, blank=True, related_name="derived_tasks"
+    )
+    provenance = models.CharField(max_length=32, blank=True, default="")
+    evidence = models.JSONField(default=list, blank=True)
+    dedup_key = models.CharField(max_length=200, blank=True, default="", db_index=True)
+
+    class Meta(OwnedModel.Meta):
+        indexes = [models.Index(fields=["owner", "status"])]
+
     def __str__(self) -> str:
         return self.title
 

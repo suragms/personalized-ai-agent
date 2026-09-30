@@ -49,6 +49,9 @@ def test_expected_schedules_are_present():
         "reports.generate_weekly_report",
         "notifications.notification_sweep",
         "github.refresh_github_analytics",
+        "intelligence.check_freshness",
+        "intelligence.daily_intelligence",
+        "intelligence.evening_review",
     }
 
 

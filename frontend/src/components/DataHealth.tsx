@@ -10,7 +10,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useDataSources, useIntegrations } from "@/hooks/useIntelligence";
+import { FreshnessBadge } from "@/components/FreshnessBadge";
+import { useDataSources, useIntegrations, useIntelligenceSummary } from "@/hooks/useIntelligence";
 import type { DataSource, IntegrationConnection } from "@/services/intelligence";
 import { normalizeStatus } from "@/lib/status";
 import { cn } from "@/lib/utils";
@@ -113,10 +114,17 @@ function formatAge(isoDate: string | null): string {
 export function DataHealth({ compact = false }: { compact?: boolean }) {
   const { data: sourcesData, isLoading: sourcesLoading } = useDataSources();
   const { data: integrationsData, isLoading: intLoading } = useIntegrations();
+  const { data: summary } = useIntelligenceSummary();
 
   const loading = sourcesLoading || intLoading;
   const sources = sourcesData?.results ?? [];
   const integrations = integrationsData?.results ?? [];
+
+  // Backend-computed freshness per source (authoritative §10 vocabulary),
+  // keyed by source name so each row can show how old its data really is.
+  const freshnessByName = new Map(
+    (summary?.data.sources ?? []).map((s) => [s.name, { level: s.freshness, message: s.message ?? null }])
+  );
 
   if (loading) {
     return (
@@ -192,6 +200,7 @@ export function DataHealth({ compact = false }: { compact?: boolean }) {
               lastSync={source.last_synced_at}
               error={source.last_error}
               compact={compact}
+              freshness={freshnessByName.get(source.name) ?? undefined}
             />
           );
         })}
@@ -207,6 +216,7 @@ function HealthRow({
   lastSync,
   error,
   compact,
+  freshness,
 }: {
   name: string;
   type: string;
@@ -215,6 +225,7 @@ function HealthRow({
   lastSync: string | null;
   error: string;
   compact: boolean;
+  freshness?: { level: string; message: string | null };
 }) {
   return (
     <div
@@ -247,7 +258,8 @@ function HealthRow({
           )}
         </div>
       </div>
-      <div className="flex-shrink-0">
+      <div className="flex-shrink-0 flex items-center gap-1.5">
+        {freshness && <FreshnessBadge level={freshness.level} message={freshness.message} />}
         <Badge variant={STATUS_VARIANT[health]}>{STATUS_LABELS[health]}</Badge>
       </div>
     </div>

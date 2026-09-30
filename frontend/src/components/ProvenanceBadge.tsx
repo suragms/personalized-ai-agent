@@ -4,10 +4,15 @@ import type { StatusTone } from "@/lib/status";
 /**
  * Provenance badge — what actually produced this content.
  *
- * REAL_AI_PROVIDER | MOCK_PROVIDER | DETERMINISTIC_TEMPLATE. Template and
- * mock output are never presented as real AI output.
+ * Covers both the AI-output provenance (REAL_AI_PROVIDER | MOCK_PROVIDER |
+ * DETERMINISTIC_TEMPLATE) and the intelligence pipeline's data provenance
+ * vocabulary (§3). Template, mock, stale, and unavailable output are never
+ * presented as fresh real data.
  */
-const PROVENANCE: Record<string, { label: string; variant: "success" | "info" | "default"; title: string }> = {
+type Variant = "success" | "info" | "warning" | "critical" | "default";
+
+const PROVENANCE: Record<string, { label: string; variant: Variant; title: string }> = {
+  // AI output provenance
   REAL_AI_PROVIDER: {
     label: "AI provider",
     variant: "success",
@@ -22,6 +27,63 @@ const PROVENANCE: Record<string, { label: string; variant: "success" | "info" | 
     label: "Template",
     variant: "default",
     title: "Deterministic template built from your data — no AI model was used",
+  },
+
+  // Data provenance (insight pipeline §3)
+  REAL_CONNECTED_DATA: {
+    label: "Connected data",
+    variant: "success",
+    title: "Computed from freshly synced data of a connected source",
+  },
+  USER_PROVIDED_DATA: {
+    label: "Your data",
+    variant: "success",
+    title: "Computed from data you entered yourself",
+  },
+  USER_ENTERED_MANUAL_DATA: {
+    label: "Manual entry",
+    variant: "success",
+    title: "Entered manually by you",
+  },
+  DETERMINISTIC_ANALYSIS: {
+    label: "Deterministic",
+    variant: "default",
+    title: "Computed by deterministic rules from stored data — no AI involved",
+  },
+  AI_DERIVED_ANALYSIS: {
+    label: "AI analysis",
+    variant: "info",
+    title: "Analysis produced with an AI provider from your data",
+  },
+  AI_RECOMMENDATION: {
+    label: "AI recommendation",
+    variant: "info",
+    title: "Recommendation produced with an AI provider from your data",
+  },
+  MOCK_DATA: {
+    label: "Mock data",
+    variant: "warning",
+    title: "Mock data — not from a real connected source",
+  },
+  STALE_DATA: {
+    label: "Stale data",
+    variant: "warning",
+    title: "Computed from data that has not been synchronized recently",
+  },
+  UNAVAILABLE_DATA: {
+    label: "No data",
+    variant: "critical",
+    title: "The source data is unavailable — nothing to compute from",
+  },
+  INSUFFICIENT_EVIDENCE: {
+    label: "Insufficient evidence",
+    variant: "warning",
+    title: "Not enough evidence to support a conclusion",
+  },
+  ERROR: {
+    label: "Error",
+    variant: "critical",
+    title: "Produced while handling an error — verify before acting",
   },
 };
 

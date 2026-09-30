@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DataHealth } from "@/components/DataHealth";
+import { ProvenanceBadge } from "@/components/ProvenanceBadge";
 import {
   useProfile,
   useGitHubStatus,
@@ -14,6 +15,7 @@ import {
   useAlerts,
   useDailyPlan,
   useGitHubSync,
+  useIntelligenceSummary,
 } from "@/hooks/useIntelligence";
 import { useSystemHealth } from "@/hooks";
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,6 +40,7 @@ export default function Dashboard() {
   const { data: insightsData, isLoading: insightsLoading } = useInsights({ status: "new" });
   const { data: alertsData, isLoading: alertsLoading } = useAlerts({ status: "active" });
   const { data: dailyPlan, isLoading: planLoading } = useDailyPlan();
+  const { data: summary } = useIntelligenceSummary();
   const syncMutation = useGitHubSync();
 
   const insights = insightsData?.results ?? [];
@@ -231,6 +234,12 @@ export default function Dashboard() {
                 {insights.length > 0 && (
                   <Badge variant="info">{insights.length} new</Badge>
                 )}
+                {summary && summary.insights.critical > 0 && (
+                  <Badge variant="critical">{summary.insights.critical} critical</Badge>
+                )}
+                {summary && summary.alerts.active > 0 && (
+                  <Badge variant="warning">{summary.alerts.active} active alerts</Badge>
+                )}
               </CardTitle>
               <Link to="/insights">
                 <Button variant="ghost" size="sm" className="text-xs">View all â†’</Button>
@@ -325,6 +334,7 @@ function InsightRow({ insight }: { insight: Insight }) {
     >
       <div className="flex flex-wrap items-center gap-1.5">
         <Badge variant={SEVERITY_VARIANT[insight.severity] ?? "default"}>{insight.severity}</Badge>
+        <ProvenanceBadge provenance={insight.provenance} />
         <p className="text-xs font-medium">{insight.title}</p>
       </div>
       {insight.description && (
@@ -377,7 +387,7 @@ function SystemHealthCard() {
             </Badge>
           ))}
         </div>
-        <p className="mt-2 text-[11px] text-muted">Live service checks — refreshed every minute.</p>
+        <p className="mt-2 text-[11px] text-muted">Live service checks ï¿½ refreshed every minute.</p>
       </CardContent>
     </Card>
   );
